@@ -319,10 +319,10 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
       </div>
 
       {isTouchDevice && (
-        <div className="absolute inset-x-0 bottom-0 pointer-events-none flex items-end justify-between p-2 pb-2 md:p-8 md:pb-8">
-          {/* Joystick di movimento posizionato molto più in basso e nell'angolo */}
+        <div className="absolute inset-x-0 bottom-1 px-1 pointer-events-none flex items-end justify-between md:p-8 md:pb-8">
+          {/* Joystick di movimento incollato all'angolo basso */}
           <div 
-            className="pointer-events-auto w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center relative active:bg-white/10 shadow-2xl"
+            className="pointer-events-auto w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center relative active:bg-white/10"
             onTouchStart={handleJoystickMove}
             onTouchMove={handleJoystickMove}
             onTouchEnd={stopJoystick}
@@ -333,9 +333,9 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
             />
           </div>
 
-          {/* Tasto Salto posizionato molto più in basso e nell'angolo opposto */}
+          {/* Tasto Salto incollato all'angolo basso opposto */}
           <div 
-            className="pointer-events-auto w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center active:scale-90 active:bg-cyan-400/20 transition-all shadow-2xl"
+            className="pointer-events-auto w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center active:scale-90 active:bg-cyan-400/20 transition-all"
             onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }}
             onTouchEnd={() => { keys.current['VirtualJump'] = false; }}
           >

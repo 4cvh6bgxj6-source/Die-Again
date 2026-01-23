@@ -46,25 +46,26 @@ export const LEVELS: LevelData[] = [
   createLevel(3, "Relax al Neon", "Hard", [
     { pos: { x: 0, y: 650 }, size: { x: 300, y: 50 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 300, y: 650 }, size: { x: 250, y: 50 }, color: NEON_PURPLE, type: 'opening_floor' },
-    { pos: { x: 600, y: 540 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
+    // Abbassata a 560 per rendere il salto facilissimo (distanza 90px)
+    { pos: { x: 600, y: 560 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 580, y: 100 }, size: { x: 40, y: 250 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: false }, 
-    { pos: { x: 800, y: 480 }, size: { x: 200, y: 50 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 820, y: 480 }, size: { x: 180, y: 50 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 920, y: 430 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
     { pos: { x: 700, y: 0 }, size: { x: 30, y: 60 }, color: NEON_PURPLE, type: 'falling_spike' },
   ]),
   createLevel(4, "Vicinanza Pericolosa", "Hard", [
-    // Piattaforma spawn più corta
+    // Piattaforma spawn
     { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    // PRIMA PIATTAFORMA MOLTO VICINA (distanza 70px)
-    { pos: { x: 220, y: 560 }, size: { x: 150, y: 30 }, color: NEON_PURPLE, type: 'wall' },
-    // Trappola tra lo spawn e la prima piattaforma
-    { pos: { x: 160, y: 680 }, size: { x: 50, y: 20 }, color: NEON_PURPLE, type: 'trap' },
-    // Seconda piattaforma traballante
-    { pos: { x: 450, y: 560 }, size: { x: 150, y: 30 }, color: NEON_PURPLE, type: 'opening_floor' },
-    // Muro mobile che scende
-    { pos: { x: 650, y: 50 }, size: { x: 60, y: 400 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: true },
+    // PRIMA PIATTAFORMA MOLTO PIÙ VICINA (X spostato da 220 a 160, gap di soli 10px!)
+    { pos: { x: 160, y: 580 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
+    // Trappola spostata più avanti
+    { pos: { x: 400, y: 680 }, size: { x: 100, y: 20 }, color: NEON_PURPLE, type: 'trap' },
+    // Seconda piattaforma
+    { pos: { x: 450, y: 500 }, size: { x: 150, y: 30 }, color: NEON_PURPLE, type: 'opening_floor' },
+    // Muro mobile
+    { pos: { x: 680, y: 50 }, size: { x: 60, y: 450 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: true },
     // Piattaforma finale
-    { pos: { x: 780, y: 560 }, size: { x: 220, y: 30 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 800, y: 560 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 940, y: 510 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ]),
 ];
