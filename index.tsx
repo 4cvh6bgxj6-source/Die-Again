@@ -1,16 +1,25 @@
 
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import App from './App';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+const container = document.getElementById('root');
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+if (!container) {
+  console.error("Errore fatale: Elemento #root non trovato nel DOM.");
+} else {
+  try {
+    const root = createRoot(container);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  } catch (error) {
+    console.error("Errore durante il mounting dell'app:", error);
+    container.innerHTML = `<div style="padding: 20px; color: red; font-family: sans-serif;">
+      <h1>Errore di Caricamento</h1>
+      <p>L'applicazione non è riuscita ad avviarsi. Controlla la console del browser per i dettagli.</p>
+    </div>`;
+  }
+}

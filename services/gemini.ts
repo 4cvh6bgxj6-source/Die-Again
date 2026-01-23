@@ -2,11 +2,16 @@
 import { GoogleGenAI } from "@google/genai";
 import { Language } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Funzione di utilità per inizializzare l'AI in modo sicuro
+const getAI = () => {
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+  return new GoogleGenAI({ apiKey: apiKey || '' });
+};
 
 export async function getRageMessage(deaths: number, lang: Language): Promise<string> {
   const langName = lang === 'it' ? 'Italian' : 'English';
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `The player just died for the ${deaths}th time in my troll game 'Die Again'. Write a short, funny, and slightly toxic/enraging insult or mock (max 15 words). In ${langName} please. Make it sound like a classic gamer rage comment.`,
@@ -24,6 +29,7 @@ export async function getRageMessage(deaths: number, lang: Language): Promise<st
 export async function getLevelAdvice(levelName: string, lang: Language): Promise<string> {
   const langName = lang === 'it' ? 'Italian' : 'English';
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Provide a 'troll' advice for a level named '${levelName}' in my game 'Die Again'. The advice should sound helpful but actually be a bit mocking. Max 20 words, in ${langName}.`,
@@ -37,6 +43,7 @@ export async function getLevelAdvice(levelName: string, lang: Language): Promise
 export async function processFeedback(username: string, feedback: string, lang: Language): Promise<string> {
   const langName = lang === 'it' ? 'Italian' : 'English';
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `User '${username}' provided this feedback for the game 'Die Again': "${feedback}". Reply as a sarcastic game developer who thinks the player is just crying because the game is too hard. Keep it under 25 words, in ${langName}, very funny and troll-ish.`,
