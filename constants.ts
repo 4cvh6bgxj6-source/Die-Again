@@ -44,20 +44,28 @@ export const LEVELS: LevelData[] = [
     { pos: { x: 950, y: 600 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ]),
   createLevel(3, "Relax al Neon", "Hard", [
-    // Piattaforma iniziale molto più larga
     { pos: { x: 0, y: 650 }, size: { x: 300, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    // Un solo pavimento traballante largo
     { pos: { x: 300, y: 650 }, size: { x: 250, y: 50 }, color: NEON_PURPLE, type: 'opening_floor' },
-    // Piattaforma centrale solida
-    { pos: { x: 600, y: 500 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
-    // Muro mobile NON letale (solo per ostacolo fisico)
+    { pos: { x: 600, y: 540 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 580, y: 100 }, size: { x: 40, y: 250 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: false }, 
-    // Piattaforma finale ampia
-    { pos: { x: 800, y: 450 }, size: { x: 200, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    // Goal ad altezza raggiungibile
-    { pos: { x: 920, y: 400 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
-    // Una sola trappola dall'alto lenta
+    { pos: { x: 800, y: 480 }, size: { x: 200, y: 50 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 920, y: 430 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
     { pos: { x: 700, y: 0 }, size: { x: 30, y: 60 }, color: NEON_PURPLE, type: 'falling_spike' },
+  ]),
+  createLevel(4, "Vicinanza Pericolosa", "Hard", [
+    // Piattaforma spawn più corta
+    { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
+    // PRIMA PIATTAFORMA MOLTO VICINA (distanza 70px)
+    { pos: { x: 220, y: 560 }, size: { x: 150, y: 30 }, color: NEON_PURPLE, type: 'wall' },
+    // Trappola tra lo spawn e la prima piattaforma
+    { pos: { x: 160, y: 680 }, size: { x: 50, y: 20 }, color: NEON_PURPLE, type: 'trap' },
+    // Seconda piattaforma traballante
+    { pos: { x: 450, y: 560 }, size: { x: 150, y: 30 }, color: NEON_PURPLE, type: 'opening_floor' },
+    // Muro mobile che scende
+    { pos: { x: 650, y: 50 }, size: { x: 60, y: 400 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: true },
+    // Piattaforma finale
+    { pos: { x: 780, y: 560 }, size: { x: 220, y: 30 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 940, y: 510 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ]),
 ];
 

@@ -11,6 +11,9 @@ import Feedback from './components/Feedback';
 import { getLevelAdvice } from './services/gemini';
 import { t } from './i18n';
 
+// Chiave definitiva per il salvataggio locale
+const SAVE_KEY = 'die_again_permanent_save_v1';
+
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.REGISTRATION);
   const [stats, setStats] = useState<UserStats>({
@@ -29,24 +32,34 @@ const App: React.FC = () => {
   const [levelAdvice, setLevelAdvice] = useState<string>("");
 
   useEffect(() => {
-    const saved = localStorage.getItem('die_again_stats_v4');
+    const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
-       const parsed = JSON.parse(saved);
-       setStats(parsed);
-       const savedLvl = LEVELS.find(l => l.id === parsed.currentLevelId) || generateProceduralLevel(parsed.currentLevelId);
-       setCurrentLevel(savedLvl);
-       setGameState(GameState.MENU);
+       try {
+         const parsed = JSON.parse(saved);
+         if (parsed && parsed.username) {
+           setStats(parsed);
+           const savedLvl = LEVELS.find(l => l.id === parsed.currentLevelId) || generateProceduralLevel(parsed.currentLevelId);
+           setCurrentLevel(savedLvl);
+           setGameState(GameState.MENU);
+         }
+       } catch (e) {
+         console.error("Errore nel caricamento dei dati salvati:", e);
+       }
     }
   }, []);
 
+  // Salva automaticamente ogni volta che gli stats cambiano
   useEffect(() => {
     if (stats.username) {
-      localStorage.setItem('die_again_stats_v4', JSON.stringify(stats));
+      localStorage.setItem(SAVE_KEY, JSON.stringify(stats));
     }
   }, [stats]);
 
   const handleRegister = (name: string, lang: Language) => {
-    setStats(prev => ({ ...prev, username: name, language: lang }));
+    const newStats: UserStats = { ...stats, username: name, language: lang };
+    setStats(newStats);
+    // Salva immediatamente al momento della registrazione
+    localStorage.setItem(SAVE_KEY, JSON.stringify(newStats));
     setGameState(GameState.MENU);
   };
 
@@ -120,7 +133,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.MENU && (
-        <div className="text-center space-y-12 animate-in fade-in zoom-in duration-500">
+        <div className="text-center space-y-6 md:space-y-12 animate-in fade-in zoom-in duration-500 w-full max-w-lg">
           <div className="absolute top-4 right-4 flex gap-2">
             <button 
               onClick={toggleLanguage}
@@ -131,28 +144,28 @@ const App: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-6xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_15px_rgba(255,0,0,0.6)]">
+            <h1 className="text-4xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_15px_rgba(255,0,0,0.6)]">
               DIE AGAIN
             </h1>
-            <p className="text-zinc-500 text-[10px] uppercase tracking-[0.4em]">{t('welcomeBack', stats.language)}, {stats.username}.</p>
+            <p className="text-zinc-500 text-[8px] md:text-[10px] uppercase tracking-[0.4em]">{t('welcomeBack', stats.language)}, {stats.username}.</p>
           </div>
           
-          <div className="flex flex-col gap-4 max-w-sm mx-auto">
+          <div className="flex flex-col gap-4 mx-auto w-full">
             <button 
               onClick={startGame}
-              className="bg-white text-black py-5 px-10 text-2xl font-bold hover:bg-zinc-200 transition-all hover:scale-105 pixel-shadow border-4 border-zinc-400 uppercase"
+              className="bg-white text-black py-4 md:py-5 px-6 md:px-10 text-xl md:text-2xl font-bold hover:bg-zinc-200 transition-all hover:scale-105 pixel-shadow border-4 border-zinc-400 uppercase"
             >
               {t('playLevel', stats.language)} {stats.currentLevelId}
             </button>
             <div className="grid grid-cols-2 gap-2">
-               <button onClick={() => setGameState(GameState.LUCKY_SPIN)} className="bg-zinc-800 text-yellow-400 py-4 text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-yellow-900 uppercase">{t('spin', stats.language)}</button>
-               <button onClick={() => setGameState(GameState.DAILY_REWARDS)} className="bg-zinc-800 text-purple-400 py-4 text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-purple-900 uppercase">{t('gifts', stats.language)}</button>
-               <button onClick={() => setGameState(GameState.SKIN_SHOP)} className="bg-zinc-800 text-indigo-400 py-4 text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-indigo-900 uppercase">{t('shop', stats.language)}</button>
-               <button onClick={() => setGameState(GameState.FEEDBACK)} className="bg-zinc-800 text-cyan-400 py-4 text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-cyan-900 uppercase">{t('feedback', stats.language)}</button>
+               <button onClick={() => setGameState(GameState.LUCKY_SPIN)} className="bg-zinc-800 text-yellow-400 py-3 md:py-4 text-[8px] md:text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-yellow-900 uppercase">{t('spin', stats.language)}</button>
+               <button onClick={() => setGameState(GameState.DAILY_REWARDS)} className="bg-zinc-800 text-purple-400 py-3 md:py-4 text-[8px] md:text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-purple-900 uppercase">{t('gifts', stats.language)}</button>
+               <button onClick={() => setGameState(GameState.SKIN_SHOP)} className="bg-zinc-800 text-indigo-400 py-3 md:py-4 text-[8px] md:text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-indigo-900 uppercase">{t('shop', stats.language)}</button>
+               <button onClick={() => setGameState(GameState.FEEDBACK)} className="bg-zinc-800 text-cyan-400 py-3 md:py-4 text-[8px] md:text-[10px] font-bold hover:bg-zinc-700 border-b-4 border-cyan-900 uppercase">{t('feedback', stats.language)}</button>
             </div>
           </div>
           
-          <div className="flex justify-center gap-10 text-[10px] text-zinc-600 uppercase border-t border-zinc-900 pt-8">
+          <div className="flex justify-center gap-10 text-[8px] md:text-[10px] text-zinc-600 uppercase border-t border-zinc-900 pt-6 md:pt-8">
             <div>{t('deaths', stats.language)}: {stats.deaths}</div>
             <div className="text-yellow-500 font-bold">{t('gems', stats.language)}: {stats.gems}</div>
           </div>
@@ -160,7 +173,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.PLAYING && (
-        <div className="flex flex-col items-center gap-6 w-full max-w-[1000px]">
+        <div className="flex flex-col items-center gap-4 md:gap-6 w-full max-w-[1000px]">
           <GameEngine 
             level={currentLevel} 
             gameState={gameState}
@@ -170,23 +183,23 @@ const App: React.FC = () => {
             lang={stats.language}
           />
           
-          <div className="w-full flex justify-between items-start gap-4 min-h-[100px]">
+          <div className="w-full flex justify-between items-start gap-4 min-h-[80px] md:min-h-[100px]">
             <div className="flex-1">
               {lastDeathMessage && (
-                <div className="bg-red-900/20 border-l-4 border-red-600 p-4 animate-in fade-in slide-in-from-left duration-300">
-                  <p className="text-red-400 text-[10px] leading-relaxed italic uppercase font-bold tracking-tight">"{lastDeathMessage}"</p>
+                <div className="bg-red-900/20 border-l-4 border-red-600 p-2 md:p-4 animate-in fade-in slide-in-from-left duration-300">
+                  <p className="text-red-400 text-[8px] md:text-[10px] leading-relaxed italic uppercase font-bold tracking-tight">"{lastDeathMessage}"</p>
                 </div>
               )}
             </div>
             <button 
               onClick={() => setGameState(GameState.MENU)}
-              className="bg-zinc-900 hover:bg-zinc-800 px-6 py-3 text-[10px] uppercase border-2 border-zinc-800 transition-colors tracking-widest font-bold"
+              className="bg-zinc-900 hover:bg-zinc-800 px-4 md:px-6 py-2 md:py-3 text-[8px] md:text-[10px] uppercase border-2 border-zinc-800 transition-colors tracking-widest font-bold"
             >
               {t('menu', stats.language)}
             </button>
             <div className="flex-1 text-right">
               {levelAdvice && (
-                <div className="text-[9px] text-zinc-500 uppercase leading-tight bg-zinc-900/40 p-3 rounded">
+                <div className="text-[7px] md:text-[9px] text-zinc-500 uppercase leading-tight bg-zinc-900/40 p-2 md:p-3 rounded">
                   <span className="text-zinc-400 font-bold block mb-1">{t('tipTitle', stats.language)}</span> {levelAdvice}
                 </div>
               )}
@@ -196,13 +209,13 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.WIN && (
-        <div className="text-center space-y-10 animate-in zoom-in duration-300 bg-zinc-900/80 p-16 border-8 border-green-500 pixel-shadow max-w-md">
-          <h2 className="text-7xl font-bold text-green-500 animate-bounce tracking-tighter">{t('winTitle', stats.language)}</h2>
-          <p className="text-zinc-400 text-sm uppercase font-bold">{t('winDesc', stats.language, { n: currentLevel.id })}</p>
-          <div className="text-3xl text-yellow-400 font-black">+150 {t('gems', stats.language)}</div>
+        <div className="text-center space-y-6 md:space-y-10 animate-in zoom-in duration-300 bg-zinc-900/80 p-8 md:p-16 border-4 md:border-8 border-green-500 pixel-shadow max-w-md w-full">
+          <h2 className="text-4xl md:text-7xl font-bold text-green-500 animate-bounce tracking-tighter">{t('winTitle', stats.language)}</h2>
+          <p className="text-zinc-400 text-[10px] md:text-sm uppercase font-bold">{t('winDesc', stats.language, { n: currentLevel.id })}</p>
+          <div className="text-xl md:text-3xl text-yellow-400 font-black">+150 {t('gems', stats.language)}</div>
           <button 
             onClick={nextLevel}
-            className="bg-green-600 text-white py-5 px-10 font-bold hover:bg-green-500 transition-all pixel-shadow uppercase text-sm w-full border-b-8 border-green-900"
+            className="bg-green-600 text-white py-4 md:py-5 px-8 md:px-10 font-bold hover:bg-green-500 transition-all pixel-shadow uppercase text-xs md:text-sm w-full border-b-8 border-green-900"
           >
             {t('nextLevel', stats.language, { n: stats.currentLevelId })}
           </button>

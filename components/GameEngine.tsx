@@ -308,36 +308,36 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
   };
 
   return (
-    <div className="relative border-8 border-indigo-950 rounded-lg overflow-hidden pixel-shadow bg-black touch-none">
+    <div className="relative border-4 md:border-8 border-indigo-950 rounded-lg overflow-hidden pixel-shadow bg-black touch-none flex flex-col items-center">
       <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="max-w-full h-auto" />
       
-      <div className="absolute top-4 left-4 flex gap-4">
-        <div className="text-cyan-400 text-[10px] bg-black/60 p-2 rounded border border-cyan-900/50">
+      <div className="absolute top-2 left-2 md:top-4 md:left-4 flex gap-4">
+        <div className="text-cyan-400 text-[8px] md:text-[10px] bg-black/60 p-2 rounded border border-cyan-900/50">
           <div>{t('zone', lang)}: {level.name}</div>
           <div>{t('scleri', lang)}: {player.deaths}</div>
         </div>
       </div>
 
       {isTouchDevice && (
-        <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-8 pb-16">
+        <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-4 md:p-8 pb-4 md:pb-16">
           <div 
-            className="pointer-events-auto w-36 h-36 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center relative active:bg-white/10"
+            className="pointer-events-auto w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center relative active:bg-white/10"
             onTouchStart={handleJoystickMove}
             onTouchMove={handleJoystickMove}
             onTouchEnd={stopJoystick}
           >
             <div 
-              className="w-14 h-14 bg-white/30 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] absolute transition-transform duration-75" 
+              className="w-10 h-10 md:w-14 md:h-14 bg-white/30 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] absolute transition-transform duration-75" 
               style={{ transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)` }}
             />
           </div>
 
           <div 
-            className="pointer-events-auto w-28 h-28 rounded-full border-4 border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center active:scale-90 active:bg-cyan-400/20 transition-all shadow-lg"
+            className="pointer-events-auto w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center active:scale-90 active:bg-cyan-400/20 transition-all shadow-lg"
             onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }}
             onTouchEnd={() => { keys.current['VirtualJump'] = false; }}
           >
-            <span className="text-xs text-cyan-400 font-black uppercase tracking-widest">{t('jump', lang)}</span>
+            <span className="text-[10px] md:text-xs text-cyan-400 font-black uppercase tracking-widest">{t('jump', lang)}</span>
           </div>
         </div>
       )}
