@@ -308,10 +308,10 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
   };
 
   return (
-    <div className="relative border-4 md:border-8 border-indigo-950 rounded-lg overflow-hidden pixel-shadow bg-black touch-none flex flex-col items-center">
+    <div className="relative border-4 md:border-8 border-indigo-950 rounded-lg overflow-hidden pixel-shadow bg-black touch-none flex flex-col items-center w-full max-w-full">
       <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="max-w-full h-auto" />
       
-      <div className="absolute top-2 left-2 md:top-4 md:left-4 flex gap-4">
+      <div className="absolute top-2 left-2 md:top-4 md:left-4 flex gap-4 pointer-events-none">
         <div className="text-cyan-400 text-[8px] md:text-[10px] bg-black/60 p-2 rounded border border-cyan-900/50">
           <div>{t('zone', lang)}: {level.name}</div>
           <div>{t('scleri', lang)}: {player.deaths}</div>
@@ -319,9 +319,10 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
       </div>
 
       {isTouchDevice && (
-        <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-4 md:p-8 pb-4 md:pb-16">
+        <div className="absolute inset-x-0 bottom-0 pointer-events-none flex items-end justify-between p-2 pb-2 md:p-8 md:pb-8">
+          {/* Joystick di movimento posizionato molto più in basso e nell'angolo */}
           <div 
-            className="pointer-events-auto w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center relative active:bg-white/10"
+            className="pointer-events-auto w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center relative active:bg-white/10 shadow-2xl"
             onTouchStart={handleJoystickMove}
             onTouchMove={handleJoystickMove}
             onTouchEnd={stopJoystick}
@@ -332,8 +333,9 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
             />
           </div>
 
+          {/* Tasto Salto posizionato molto più in basso e nell'angolo opposto */}
           <div 
-            className="pointer-events-auto w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center active:scale-90 active:bg-cyan-400/20 transition-all shadow-lg"
+            className="pointer-events-auto w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center active:scale-90 active:bg-cyan-400/20 transition-all shadow-2xl"
             onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }}
             onTouchEnd={() => { keys.current['VirtualJump'] = false; }}
           >
@@ -343,7 +345,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
       )}
 
       {!isTouchDevice && (
-        <div className="absolute bottom-4 right-4 text-indigo-400 text-[10px] bg-black/60 p-1 px-2 uppercase border border-indigo-900/50">
+        <div className="absolute bottom-4 right-4 text-indigo-400 text-[10px] bg-black/60 p-1 px-2 uppercase border border-indigo-900/50 pointer-events-none">
           Arrows: Run | Space: Jump
         </div>
       )}
