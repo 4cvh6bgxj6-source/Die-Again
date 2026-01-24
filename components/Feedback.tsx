@@ -16,16 +16,16 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
 
+  // Webhook corretto per il feedback
   const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1464217372951838731/UNCHf8sOTAdqM9B8-5loPMboKJG67LxWaIZ0nBuctTvS8QUDTW1SsLpZPMYKPTcP9WyN";
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
     
-    // Mostriamo istantaneamente la schermata di successo
     setIsSubmitted(true);
     setIsLoadingAI(true);
 
-    // Invio al Webhook di Discord in background
+    // Invio al Webhook di Discord
     fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -33,7 +33,7 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
       },
       body: JSON.stringify({
         embeds: [{
-          title: "Nuovo Feedback - Die Again",
+          title: "💬 Nuovo Feedback Giocatore",
           color: 3447003,
           fields: [
             { name: "Utente", value: username, inline: true },
@@ -43,7 +43,7 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
           timestamp: new Date().toISOString()
         }]
       }),
-    }).catch(err => console.error("Errore Discord:", err));
+    }).catch(err => console.error("Errore Discord Feedback:", err));
 
     // Richiesta a Gemini per la risposta troll
     try {
@@ -75,7 +75,7 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
               disabled={!text.trim()}
               className="bg-cyan-600 text-white py-4 font-bold hover:bg-cyan-500 disabled:bg-zinc-800 uppercase text-sm"
             >
-              {t('playLevel', lang).includes('GIOCA') ? 'INVIA FEEDBACK' : 'SEND FEEDBACK'}
+              INVIA FEEDBACK
             </button>
           </>
         ) : (
