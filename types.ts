@@ -5,7 +5,10 @@ export enum GameState {
   LUCKY_SPIN,
   DAILY_REWARDS,
   SKIN_SHOP,
+  PASS_SHOP,
   FEEDBACK,
+  SECRET_CODES,
+  MISSIONS,
   PLAYING,
   GAMEOVER,
   WIN
@@ -41,6 +44,18 @@ export interface Skin {
   name: string;
   color: string;
   price: number;
+  isVipOnly?: boolean;
+  isCodeOnly?: boolean;
+  isAdmin?: boolean;
+}
+
+export interface Mission {
+  id: string;
+  description: string;
+  reward: number;
+  target: number;
+  current: number;
+  completed: boolean;
 }
 
 export interface UserStats {
@@ -53,4 +68,9 @@ export interface UserStats {
   unlockedSkins: string[];
   activeSkinId: string;
   language: Language;
+  membership: 'none' | 'premium' | 'vip';
+  nameColor: string;
+  missionsUnlocked: boolean;
+  missions: Mission[];
+  usedCodes: string[];
 }

@@ -16,6 +16,9 @@ export const SKINS: Skin[] = [
   { id: 'ruby', name: 'RUBINO', color: '#ff0055', price: 1500 },
   { id: 'emerald', name: 'SMERALDO', color: '#00ff88', price: 2000 },
   { id: 'ghost', name: 'FANTASMA', color: '#ffffff', price: 5000 },
+  { id: 'neon', name: 'NEON X', color: '#ff00ff', price: 0, isVipOnly: true },
+  { id: 'inferno', name: 'INFERNO', color: '#ff4500', price: 0, isVipOnly: true },
+  { id: 'admin', name: 'ADMIN', color: '#ff0000', price: 0, isCodeOnly: true, isAdmin: true },
 ];
 
 const createLevel = (id: number, name: string, difficulty: any, objects: GameObject[]): LevelData => ({
@@ -46,7 +49,6 @@ export const LEVELS: LevelData[] = [
   createLevel(3, "Relax al Neon", "Hard", [
     { pos: { x: 0, y: 650 }, size: { x: 300, y: 50 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 300, y: 650 }, size: { x: 250, y: 50 }, color: NEON_PURPLE, type: 'opening_floor' },
-    // Abbassata a 560 per rendere il salto facilissimo (distanza 90px)
     { pos: { x: 600, y: 560 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 580, y: 100 }, size: { x: 40, y: 250 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: false }, 
     { pos: { x: 820, y: 480 }, size: { x: 180, y: 50 }, color: NEON_PURPLE, type: 'wall' },
@@ -54,17 +56,11 @@ export const LEVELS: LevelData[] = [
     { pos: { x: 700, y: 0 }, size: { x: 30, y: 60 }, color: NEON_PURPLE, type: 'falling_spike' },
   ]),
   createLevel(4, "Vicinanza Pericolosa", "Hard", [
-    // Piattaforma spawn
     { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    // PRIMA PIATTAFORMA MOLTO PIÙ VICINA (X spostato da 220 a 160, gap di soli 10px!)
     { pos: { x: 160, y: 580 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
-    // Trappola spostata più avanti
     { pos: { x: 400, y: 680 }, size: { x: 100, y: 20 }, color: NEON_PURPLE, type: 'trap' },
-    // Seconda piattaforma
     { pos: { x: 450, y: 500 }, size: { x: 150, y: 30 }, color: NEON_PURPLE, type: 'opening_floor' },
-    // Muro mobile
     { pos: { x: 680, y: 50 }, size: { x: 60, y: 450 }, color: NEON_PURPLE, type: 'moving_wall', isLethal: true },
-    // Piattaforma finale
     { pos: { x: 800, y: 560 }, size: { x: 200, y: 30 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 940, y: 510 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ]),

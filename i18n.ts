@@ -13,7 +13,9 @@ export const translations = {
     spin: "SPIN",
     gifts: "REGALI",
     shop: "NEGOZIO",
+    pass: "PASS",
     feedback: "FEEDBACK",
+    codes: "CODICI",
     deaths: "MORTE",
     gems: "GEMME",
     menu: "MENU",
@@ -45,7 +47,29 @@ export const translations = {
     scleri: "SCLERI",
     jump: "SALTO",
     insufficientGemsAlert: "GEMME INSUFFICIENTI!",
-    cancel: "Annulla"
+    cancel: "Annulla",
+    passShop: "NEGOZIO PASS",
+    premium: "PREMIUM",
+    vip: "VIP",
+    buyPremium: "COMPRA PREMIUM (5000 💎)",
+    buyVip: "COMPRA VIP (20000 💎)",
+    premiumFeatures: "• Nome Colorato\n• Skin Esclusive\n• Supporto Sviluppatore",
+    vipFeatures: "• Nome Arcobaleno\n• Easy Mode (Floor non cade)\n• Sblocca TUTTE le Skin\n• Muri mobili più lenti",
+    owned: "GIÀ POSSEDUTO",
+    nameColor: "COLORE NOME",
+    secretCodesTitle: "CODICI SEGRETI",
+    enterCode: "INSERISCI CODICE...",
+    redeem: "RISCATTA",
+    noCodesText: "Non hai i codici segreti? Clicca qui",
+    codeSuccess: "CODICE VALIDO! PREMIO RICEVUTO",
+    codeInvalid: "CODICE NON VALIDO O GIÀ USATO!",
+    missions: "MISSIONI",
+    missionsTitle: "OBIETTIVI DI SCLERO",
+    claim: "RISCATTA",
+    completed: "FATTO",
+    fly: "VOLA",
+    noTraps: "NO TRAPS",
+    finish: "FINISCI"
   },
   en: {
     newUser: "NEW USER",
@@ -58,7 +82,9 @@ export const translations = {
     spin: "SPIN",
     gifts: "GIFTS",
     shop: "SHOP",
+    pass: "PASS",
     feedback: "FEEDBACK",
+    codes: "CODES",
     deaths: "DEATHS",
     gems: "GEMS",
     menu: "MENU",
@@ -90,14 +116,36 @@ export const translations = {
     scleri: "RAGE",
     jump: "JUMP",
     insufficientGemsAlert: "NOT ENOUGH GEMS!",
-    cancel: "Cancel"
+    cancel: "Cancel",
+    passShop: "PASS SHOP",
+    premium: "PREMIUM",
+    vip: "VIP",
+    buyPremium: "BUY PREMIUM (5000 💎)",
+    buyVip: "BUY VIP (20000 💎)",
+    premiumFeatures: "• Colored Name\n• Exclusive Skins\n• Support Dev",
+    vipFeatures: "• Rainbow Name\n• Easy Mode (Floor no fall)\n• Unlock ALL Skins\n• Slower moving walls",
+    owned: "ALREADY OWNED",
+    nameColor: "NAME COLOR",
+    secretCodesTitle: "SECRET CODES",
+    enterCode: "ENTER CODE...",
+    redeem: "REDEEM",
+    noCodesText: "Don't have the secret codes? Click here",
+    codeSuccess: "VALID CODE! REWARD RECEIVED",
+    codeInvalid: "INVALID CODE OR ALREADY USED!",
+    missions: "MISSIONS",
+    missionsTitle: "RAGE OBJECTIVES",
+    claim: "CLAIM",
+    completed: "DONE",
+    fly: "FLY",
+    noTraps: "NO TRAPS",
+    finish: "FINISH"
   }
 };
 
 export type TranslationKey = keyof typeof translations.it;
 
 export const t = (key: TranslationKey, lang: Language, params?: { [key: string]: any }) => {
-  let str = translations[lang][key] || key;
+  let str = (translations[lang] as any)[key] || key;
   if (params) {
     Object.keys(params).forEach(p => {
       str = str.replace(`{${p}}`, params[p]);
