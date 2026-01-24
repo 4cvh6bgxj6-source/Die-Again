@@ -25,7 +25,7 @@ export interface GameObject {
   pos: Vector2D;
   size: Vector2D;
   color: string;
-  type: 'player' | 'wall' | 'trap' | 'goal' | 'moving_wall' | 'falling_spike' | 'disappearing_floor' | 'opening_floor';
+  type: 'player' | 'wall' | 'trap' | 'goal' | 'moving_wall' | 'falling_spike' | 'disappearing_floor' | 'opening_floor' | 'collectible_gem';
   isLethal?: boolean;
   state?: any;
 }
@@ -73,4 +73,5 @@ export interface UserStats {
   missionsUnlocked: boolean;
   missions: Mission[];
   usedCodes: string[];
+  adminAbuseActive?: boolean;
 }

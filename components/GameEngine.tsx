@@ -12,6 +12,9 @@ interface GameEngineProps {
   activeSkinId: string;
   lang: Language;
   userStats: UserStats;
+  releaseGems?: boolean;
+  gemCount?: number;
+  onJackpot?: () => void;
 }
 
 interface Snowflake {
@@ -22,7 +25,7 @@ interface Snowflake {
   drift: number;
 }
 
-const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameState, activeSkinId, lang, userStats }) => {
+const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameState, activeSkinId, lang, userStats, releaseGems, gemCount = 0, onJackpot }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const snowflakes = useRef<Snowflake[]>([]);
   const activeSkin = SKINS.find(s => s.id === activeSkinId) || SKINS[0];
@@ -48,8 +51,9 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
   const isDeadRef = useRef(false);
   
   const objectsStateRef = useRef<any[]>([]);
+  const collectedGemsCount = useRef(0);
+  const totalGemsReleased = useRef(0);
 
-  // Inizializza i fiocchi di neve
   useEffect(() => {
     const snow: Snowflake[] = [];
     for (let i = 0; i < 150; i++) {
@@ -65,7 +69,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
   }, []);
 
   const resetObjects = useCallback(() => {
-    objectsStateRef.current = level.objects.map(obj => ({
+    const baseObjects = level.objects.map(obj => ({
       ...obj,
       currentPos: { ...obj.pos },
       initialPos: { ...obj.pos },
@@ -74,7 +78,35 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
       timer: 0,
       tremble: 0
     }));
-  }, [level]);
+
+    if (releaseGems && gemCount > 0) {
+      collectedGemsCount.current = 0;
+      totalGemsReleased.current = gemCount;
+      for (let i = 0; i < gemCount; i++) {
+        baseObjects.push({
+          type: 'collectible_gem',
+          pos: { 
+            x: 50 + Math.random() * (CANVAS_WIDTH - 100), 
+            y: 50 + Math.random() * (CANVAS_HEIGHT - 150) 
+          },
+          currentPos: { x: 0, y: 0 },
+          initialPos: { x: 0, y: 0 },
+          size: { x: 24, y: 24 },
+          color: '#fbbf24',
+          active: true,
+          timer: Math.random() * 10,
+          tremble: 0,
+          dir: 0
+        });
+        const last = baseObjects[baseObjects.length - 1];
+        last.currentPos = { ...last.pos };
+      }
+    } else {
+      totalGemsReleased.current = 0;
+    }
+
+    objectsStateRef.current = baseObjects;
+  }, [level, releaseGems, gemCount]);
 
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -91,10 +123,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
 
   const checkCollision = (p: Vector2D, objState: any) => {
     if (!objState.active) return false;
-    if (!isVip) {
-      if (objState.type === 'opening_floor' && objState.timer > 40) return false;
-      if (objState.type === 'disappearing_floor' && !objState.active) return false;
-    }
+    if (!isVip && objState.type === 'opening_floor' && objState.timer > 40) return false;
     const renderY = objState.currentPos.y + (objState.type === 'opening_floor' ? objState.tremble : 0);
     return (
       p.x < objState.currentPos.x + objState.size.x &&
@@ -107,14 +136,10 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
   const update = useCallback(() => {
     if (gameState !== GameState.PLAYING || isDeadRef.current) return;
 
-    // Aggiornamento neve
     snowflakes.current.forEach(f => {
       f.y += f.speed;
       f.x += f.drift;
-      if (f.y > CANVAS_HEIGHT) {
-        f.y = -10;
-        f.x = Math.random() * CANVAS_WIDTH;
-      }
+      if (f.y > CANVAS_HEIGHT) { f.y = -10; f.x = Math.random() * CANVAS_WIDTH; }
       if (f.x > CANVAS_WIDTH) f.x = 0;
       if (f.x < 0) f.x = CANVAS_WIDTH;
     });
@@ -126,14 +151,10 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
       let nextFacing = prev.facingRight;
 
       if (keys.current['ArrowLeft'] || keys.current['KeyA'] || keys.current['VirtualLeft']) {
-        nextVel.x = -MOVE_SPEED;
-        nextFacing = false;
+        nextVel.x = -MOVE_SPEED; nextFacing = false;
       } else if (keys.current['ArrowRight'] || keys.current['KeyD'] || keys.current['VirtualRight']) {
-        nextVel.x = MOVE_SPEED;
-        nextFacing = true;
-      } else {
-        nextVel.x = 0;
-      }
+        nextVel.x = MOVE_SPEED; nextFacing = true;
+      } else { nextVel.x = 0; }
 
       if (adminFly) {
         if (keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['VirtualUp']) nextVel.y = -MOVE_SPEED;
@@ -152,34 +173,38 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
 
       if (nextPos.x < 0) nextPos.x = 0;
       if (nextPos.x > CANVAS_WIDTH - PLAYER_SIZE) nextPos.x = CANVAS_WIDTH - PLAYER_SIZE;
-      
-      if (nextPos.y > CANVAS_HEIGHT) {
-        triggerDeath();
-        return prev;
-      }
+      if (nextPos.y > CANVAS_HEIGHT) { triggerDeath(); return prev; }
 
       let diedThisFrame = false;
 
       objectsStateRef.current.forEach((obj) => {
         if (!obj.active) return;
+
+        if (obj.type === 'collectible_gem') {
+          obj.timer += 0.15;
+          obj.currentPos.y = obj.pos.y + Math.sin(obj.timer) * 12;
+          if (checkCollision(nextPos, obj)) {
+            obj.active = false;
+            collectedGemsCount.current++;
+            if (collectedGemsCount.current === totalGemsReleased.current && totalGemsReleased.current > 0) {
+              onJackpot?.();
+            }
+          }
+          return;
+        }
+
         if (obj.type === 'opening_floor') {
           const dist = Math.abs(prev.pos.x - (obj.currentPos.x + obj.size.x / 2));
           if (dist < 80 && obj.timer === 0) obj.timer = 1;
           if (obj.timer > 0) {
             obj.timer++;
-            if (obj.timer < 40) {
-              obj.tremble = Math.sin(obj.timer * 0.9) * 2;
-            } else if (!isVip) {
-              obj.tremble = 0;
-              obj.currentPos.y += 18;
-              if (obj.currentPos.y > CANVAS_HEIGHT + 100) obj.active = false;
-            }
+            if (obj.timer < 40) obj.tremble = Math.sin(obj.timer * 0.9) * 2;
+            else if (!isVip) { obj.tremble = 0; obj.currentPos.y += 18; if (obj.currentPos.y > CANVAS_HEIGHT + 100) obj.active = false; }
           }
         }
         if (obj.type === 'moving_wall') {
            const range = 250;
-           const speedBase = 4 + (level.id * 0.2);
-           const speed = isVip ? speedBase * 0.5 : speedBase;
+           const speed = isVip ? (4 + (level.id * 0.2)) * 0.5 : 4 + (level.id * 0.2);
            obj.currentPos.y += obj.dir * speed;
            if (Math.abs(obj.currentPos.y - obj.initialPos.y) > range) obj.dir *= -1;
         }
@@ -187,45 +212,30 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
            if (obj.dir === 0 && Math.abs(prev.pos.x - (obj.currentPos.x + obj.size.x/2)) < 60) obj.dir = 1;
            if (obj.dir === 1) obj.currentPos.y += 20;
         }
+
         if (checkCollision(nextPos, obj)) {
           if (obj.isLethal || obj.type === 'trap' || obj.type === 'falling_spike') {
             if (!adminNoTraps) diedThisFrame = true;
           } else if (obj.type === 'wall' || obj.type === 'moving_wall' || obj.type === 'disappearing_floor' || obj.type === 'opening_floor') {
             const currentObjY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
             if (prev.pos.y + PLAYER_SIZE <= currentObjY + 12) {
-              nextPos.y = currentObjY - PLAYER_SIZE;
-              nextVel.y = 0;
-              nextGrounded = true;
-              if (obj.type === 'disappearing_floor' && !isVip) {
-                obj.timer++;
-                if (obj.timer > 25) obj.active = false;
-              }
+              nextPos.y = currentObjY - PLAYER_SIZE; nextVel.y = 0; nextGrounded = true;
+              if (obj.type === 'disappearing_floor' && !isVip) { obj.timer++; if (obj.timer > 25) obj.active = false; }
             } else if (!adminFly) {
-              if (prev.pos.y >= currentObjY + obj.size.y - 12) {
-                nextPos.y = currentObjY + obj.size.y;
-                nextVel.y = 1;
-              } else if (prev.pos.x + PLAYER_SIZE <= obj.currentPos.x + 12) {
-                nextPos.x = obj.currentPos.x - PLAYER_SIZE;
-              } else if (prev.pos.x >= obj.currentPos.x + obj.size.x - 12) {
-                nextPos.x = obj.currentPos.x + obj.size.x;
-              }
+              if (prev.pos.y >= currentObjY + obj.size.y - 12) { nextPos.y = currentObjY + obj.size.y; nextVel.y = 1; }
+              else if (prev.pos.x + PLAYER_SIZE <= obj.currentPos.x + 12) { nextPos.x = obj.currentPos.x - PLAYER_SIZE; }
+              else if (prev.pos.x >= obj.currentPos.x + obj.size.x - 12) { nextPos.x = obj.currentPos.x + obj.size.x; }
             }
-          } else if (obj.type === 'goal') {
-            onWin();
-          }
+          } else if (obj.type === 'goal') { onWin(); }
         }
       });
 
-      if (diedThisFrame) {
-        triggerDeath();
-        return prev;
-      }
-
+      if (diedThisFrame) { triggerDeath(); return prev; }
       return { ...prev, pos: nextPos, vel: nextVel, isGrounded: nextGrounded, facingRight: nextFacing };
     });
 
     requestRef.current = requestAnimationFrame(update);
-  }, [gameState, level, onWin, triggerDeath, isVip, adminFly, adminNoTraps]);
+  }, [gameState, level, onWin, triggerDeath, isVip, adminFly, adminNoTraps, onJackpot]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => { keys.current[e.code] = true; };
@@ -248,43 +258,40 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
 
     const render = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      
-      // SFONDO NATALIZIO NOTTURNO
       const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-      grad.addColorStop(0, '#050b18');
-      grad.addColorStop(1, '#1a365d');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      grad.addColorStop(0, '#050b18'); grad.addColorStop(1, '#1a365d');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // DISEGNO NEVE
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      snowflakes.current.forEach(f => {
-        ctx.beginPath();
-        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
+      snowflakes.current.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill(); });
 
       objectsStateRef.current.forEach((obj) => {
         if (!obj.active) return;
         const renderY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
         
-        // Colori invernali per gli ostacoli
+        if (obj.type === 'collectible_gem') {
+          ctx.fillStyle = '#fbbf24';
+          ctx.shadowBlur = 20; ctx.shadowColor = '#fbbf24';
+          ctx.beginPath(); 
+          ctx.moveTo(obj.currentPos.x + 12, renderY);
+          ctx.lineTo(obj.currentPos.x + 24, renderY + 12); 
+          ctx.lineTo(obj.currentPos.x + 12, renderY + 24);
+          ctx.lineTo(obj.currentPos.x, renderY + 12); 
+          ctx.closePath(); 
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          return;
+        }
+
         ctx.fillStyle = (adminNoTraps && (obj.isLethal || obj.type === 'trap' || obj.type === 'falling_spike')) ? '#333' : obj.color;
-        
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = ctx.fillStyle as string;
+        ctx.shadowBlur = 6; ctx.shadowColor = ctx.fillStyle as string;
         if (obj.type === 'falling_spike' || obj.type === 'trap') {
            ctx.beginPath(); ctx.moveTo(obj.currentPos.x, renderY + obj.size.y);
-           ctx.lineTo(obj.currentPos.x + obj.size.x / 2, renderY);
-           ctx.lineTo(obj.currentPos.x + obj.size.x, renderY + obj.size.y);
+           ctx.lineTo(obj.currentPos.x + obj.size.x / 2, renderY); ctx.lineTo(obj.currentPos.x + obj.size.x, renderY + obj.size.y);
            ctx.fill();
         } else {
            ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y);
-           // Aggiunta strato di neve sopra i muri
-           if (obj.type === 'wall' || obj.type === 'moving_wall') {
-             ctx.fillStyle = 'white';
-             ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, 4);
-           }
+           if (obj.type === 'wall' || obj.type === 'moving_wall') { ctx.fillStyle = 'white'; ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, 4); }
         }
         ctx.shadowBlur = 0;
       });
@@ -318,12 +325,8 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
     const limitedX = distance > maxDist ? (diffX/distance) * maxDist : diffX;
     const limitedY = distance > maxDist ? (diffY/distance) * maxDist : diffY;
     setJoystickPos({ x: limitedX, y: limitedY });
-    keys.current['VirtualLeft'] = diffX < -15;
-    keys.current['VirtualRight'] = diffX > 15;
-    if (adminFly) {
-      keys.current['VirtualUp'] = diffY < -15;
-      keys.current['VirtualDown'] = diffY > 15;
-    }
+    keys.current['VirtualLeft'] = diffX < -15; keys.current['VirtualRight'] = diffX > 15;
+    if (adminFly) { keys.current['VirtualUp'] = diffY < -15; keys.current['VirtualDown'] = diffY > 15; }
   };
 
   return (
@@ -336,6 +339,13 @@ const GameEngine: React.FC<GameEngineProps> = ({ level, onDeath, onWin, gameStat
           <button onClick={onWin} className="p-2 border-2 border-yellow-500 bg-yellow-900 text-yellow-100 text-[8px] font-black uppercase">{t('finish', lang)}</button>
         </div>
       )}
+      
+      {totalGemsReleased.current > 0 && (
+        <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20 bg-yellow-600/90 p-3 border-2 border-white text-[10px] font-black text-white uppercase animate-pulse shadow-[0_0_15px_#fbbf24]">
+          ADMIN CHALLENGE: {collectedGemsCount.current} / {totalGemsReleased.current}
+        </div>
+      )}
+
       <div className="absolute top-2 left-2 md:top-4 md:left-4 flex gap-4 pointer-events-none">
         <div className="text-white text-[8px] md:text-[10px] bg-red-800/60 p-2 rounded border border-white/50">
           <div>{t('zone', lang)}: {level.name} ❄️</div>
