@@ -61,6 +61,28 @@ const App: React.FC = () => {
     // Salva immediatamente al momento della registrazione
     localStorage.setItem(SAVE_KEY, JSON.stringify(newStats));
     setGameState(GameState.MENU);
+
+    // Notifica Discord per la registrazione
+    const REG_WEBHOOK_URL = "https://discord.com/api/webhooks/1464529974752186422/rOAHvaPEZ2wVbCEz9cizMNJhYooULv8qN4eQenVN3g7fCDmqYCTPH08sHg91_eFo9f5Q";
+    fetch(REG_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        embeds: [{
+          title: "🎯 Nuova Registrazione - Die Again",
+          color: 15158332, // Rosso scuro
+          fields: [
+            { name: "👤 Utente", value: name, inline: true },
+            { name: "🌍 Lingua", value: lang.toUpperCase(), inline: true },
+            { name: "💎 Gemme Iniziali", value: "500", inline: true }
+          ],
+          footer: { text: "Die Again System" },
+          timestamp: new Date().toISOString()
+        }]
+      }),
+    }).catch(err => console.error("Errore notifica Discord registrazione:", err));
   };
 
   const startGame = () => {
