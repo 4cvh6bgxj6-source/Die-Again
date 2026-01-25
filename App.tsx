@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GameState, UserStats, LevelData, Skin, Language, Mission } from './types';
-import { LEVELS, generateProceduralLevel, SKINS } from './constants';
+import { LEVELS, generateProceduralLevel, SKINS, DIE_PASS_REWARDS } from './constants';
 import GameEngine from './components/GameEngine';
 import LuckySpin from './components/LuckySpin';
 import DailyRewards from './components/DailyRewards';
@@ -10,8 +10,11 @@ import PassShop from './components/PassShop';
 import Registration from './components/Registration';
 import Feedback from './components/Feedback';
 import SecretCodes from './components/SecretCodes';
-import Missions from './components/Missions';
 import PlayerPreview from './components/PlayerPreview';
+import FireDashGroup from './components/FireDashGroup';
+import GameIdea from './components/GameIdea';
+import Missions from './components/Missions';
+import DiePass from './components/DiePass';
 import { getLevelAdvice, getRageMessage } from './services/gemini';
 import { t } from './i18n';
 
@@ -30,6 +33,9 @@ const App: React.FC = () => {
     username: '',
     deaths: 0,
     gems: 500,
+    xp: 0,
+    isDiePassPlus: false,
+    claimedRewards: [],
     currentLevelId: 1,
     lastDailyClaim: null,
     dailyStreak: 0,
@@ -58,7 +64,13 @@ const App: React.FC = () => {
        try {
          const parsed = JSON.parse(saved);
          if (parsed && parsed.username) {
-           setStats(prev => ({ ...prev, ...parsed }));
+           setStats(prev => ({ 
+             ...prev, 
+             ...parsed, 
+             xp: parsed.xp ?? 0, 
+             isDiePassPlus: parsed.isDiePassPlus ?? false,
+             claimedRewards: parsed.claimedRewards ?? []
+           }));
            const savedLvl = LEVELS.find(l => l.id === parsed.currentLevelId) || generateProceduralLevel(parsed.currentLevelId);
            setCurrentLevel(savedLvl);
            setGameState(GameState.MENU);
@@ -71,30 +83,16 @@ const App: React.FC = () => {
     if (stats.username) {
       localStorage.setItem(SAVE_KEY, JSON.stringify(stats));
     }
+    if (stats.activeSkinId === 'admin_power' && !stats.adminAbuseActive) {
+      setStats(prev => ({ ...prev, adminAbuseActive: true }));
+    }
   }, [stats]);
 
   const handleRegister = (name: string, lang: Language) => {
     const newStats: UserStats = { ...stats, username: name, language: lang };
     setStats(newStats);
     setGameState(GameState.MENU);
-
-    // Webhook di Registrazione
-    fetch(REGISTRATION_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        embeds: [{
-          title: "🚀 Nuova Registrazione",
-          color: 65280,
-          fields: [
-            { name: "Giocatore", value: name, inline: true },
-            { name: "Lingua", value: lang, inline: true },
-            { name: "Status", value: "Pronto a sclerare", inline: false }
-          ],
-          timestamp: new Date().toISOString()
-        }]
-      })
-    }).catch(err => console.error("Discord Reg Error:", err));
+    fetch(REGISTRATION_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds: [{ title: "🚀 Nuova Registrazione", color: 0x00ff00, fields: [{ name: "Username", value: name, inline: true }], timestamp: new Date().toISOString() }] }) }).catch(() => {});
   };
 
   const startGame = () => {
@@ -113,13 +111,10 @@ const App: React.FC = () => {
     setActiveGemRain(0); 
     setStats(prev => {
       const newMissions = prev.missions.map(m => m.id === 'm1' ? { ...m, current: m.current + 1 } : m);
-      return { ...prev, deaths: prev.deaths + 1, missions: newMissions };
+      return { ...prev, deaths: prev.deaths + 1, missions: newMissions, xp: prev.xp + 10 };
     });
-    
     setLastDeathMessage(""); 
-    getRageMessage(stats.deaths + 1, stats.language).then(msg => {
-      setLastDeathMessage(msg);
-    });
+    getRageMessage(stats.deaths + 1, stats.language).then(msg => setLastDeathMessage(msg));
   };
 
   const handleWin = () => {
@@ -128,7 +123,7 @@ const App: React.FC = () => {
     setStats(prev => {
       const nextId = prev.currentLevelId + 1;
       const newMissions = prev.missions.map(m => m.id === 'm2' ? { ...m, current: m.current + 1 } : m);
-      return { ...prev, currentLevelId: nextId, gems: prev.gems + 150, missions: newMissions };
+      return { ...prev, currentLevelId: nextId, gems: prev.gems + 150, missions: newMissions, xp: prev.xp + 100 };
     });
   };
 
@@ -136,219 +131,184 @@ const App: React.FC = () => {
     if (stats.usedCodes.includes(code)) return false;
     let updatedStats = { ...stats, usedCodes: [...stats.usedCodes, code] };
     let valid = false;
-    if (code === '5000') { updatedStats.gems += 5000; valid = true; } 
+    // NUOVI CODICI RICHIESTI
+    if (code === '12.500') { updatedStats.gems += 12500; valid = true; }
+    else if (code === '261409') { updatedStats.xp += 261409; valid = true; }
+    // CODICI ESISTENTI
+    else if (code === '5000') { updatedStats.gems += 5000; valid = true; } 
     else if (code === 'ADMIN') { updatedStats.unlockedSkins = [...new Set([...updatedStats.unlockedSkins, 'admin'])]; valid = true; } 
     else if (code === 'ADMIN ABUSE') { updatedStats.adminAbuseActive = true; valid = true; }
     else if (code === 'PREMIUM') { updatedStats.membership = 'premium'; valid = true; } 
-    else if (code === 'VIP') { 
-      updatedStats.membership = 'vip'; 
-      const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id);
-      updatedStats.unlockedSkins = [...new Set([...updatedStats.unlockedSkins, ...vipUnlockable])]; 
-      valid = true; 
-    } 
+    else if (code === 'MISSION') { updatedStats.missionsUnlocked = true; valid = true; }
+    else if (code === 'VIP') { updatedStats.membership = 'vip'; const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); updatedStats.unlockedSkins = [...new Set([...updatedStats.unlockedSkins, ...vipUnlockable])]; valid = true; } 
+    
     if (valid) setStats(updatedStats);
     return valid;
   };
 
+  const handleClaimMission = (missionId: string) => {
+    setStats(prev => {
+      const mission = prev.missions.find(m => m.id === missionId);
+      if (!mission || mission.completed || mission.current < mission.target) return prev;
+      const newMissions = prev.missions.map(m => m.id === missionId ? { ...m, completed: true } : m);
+      return { ...prev, gems: prev.gems + mission.reward, missions: newMissions };
+    });
+  };
+
+  const handleBuyDiePassPlus = () => {
+    if (stats.gems >= 12500 && !stats.isDiePassPlus) {
+      setStats(prev => ({ ...prev, gems: prev.gems - 12500, isDiePassPlus: true }));
+    }
+  };
+
+  const handleClaimPassReward = (level: number, type: 'free' | 'plus') => {
+    const rewardId = `${level}_${type}`;
+    if (stats.claimedRewards.includes(rewardId)) return;
+    const rewardData = DIE_PASS_REWARDS.find(r => r.level === level);
+    if (!rewardData) return;
+    const data = type === 'free' ? rewardData.freeReward : rewardData.plusReward;
+    if (!data) return;
+    setStats(prev => {
+      let newStats = { ...prev, claimedRewards: [...prev.claimedRewards, rewardId] };
+      if (data.type === 'gems') { newStats.gems += data.amount || 0; } 
+      else if (data.type === 'skin') { newStats.unlockedSkins = [...new Set([...newStats.unlockedSkins, data.value])]; }
+      return newStats;
+    });
+  };
+
   const triggerAdminAbuse = () => {
-    if (adminMsgInput.trim()) {
-      setGlobalBroadcast(adminMsgInput);
-      // Il messaggio scompare dopo 15 secondi
-      setTimeout(() => setGlobalBroadcast(""), 15000);
-    }
-    if (adminGemInput > 0) {
-      setActiveGemRain(adminGemInput);
-      if (!adminMsgInput.trim()) {
-        setGlobalBroadcast(`ADMIN ABUSE: ${adminGemInput.toLocaleString()} GEMME RILASCIATE PER TUTTI!`);
-        setTimeout(() => setGlobalBroadcast(""), 10000);
-      }
-    }
-    setAdminPanelOpen(false);
-    setAdminMsgInput("");
+    if (adminMsgInput.trim()) { setGlobalBroadcast(adminMsgInput); setTimeout(() => setGlobalBroadcast(""), 20000); }
+    if (adminGemInput > 0) { setActiveGemRain(adminGemInput); if (!adminMsgInput.trim()) { setGlobalBroadcast(`L'ADMIN ${stats.username.toUpperCase()} HA RILASCIATO ${adminGemInput.toLocaleString()} GEMME!`); setTimeout(() => setGlobalBroadcast(""), 12000); } }
+    setAdminPanelOpen(false); setAdminMsgInput("");
   };
 
-  const handleJackpot = () => {
-    setStats(prev => ({ ...prev, gems: prev.gems + 20000 }));
-    setGlobalBroadcast("🚨 SYSTEM: JACKPOT 20.000 GEMME RISCATTATO! 🚨");
-    setTimeout(() => setGlobalBroadcast(""), 6000);
-  };
-
+  const handleJackpot = () => { setStats(prev => ({ ...prev, gems: prev.gems + 20000 })); setGlobalBroadcast("🚨 SYSTEM: JACKPOT 20.000 GEMME PRESO! 🚨"); setTimeout(() => setGlobalBroadcast(""), 6000); };
   const isDailyClaimed = stats.lastDailyClaim === new Date().toDateString();
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#050b18] to-[#1a2e4c] text-white flex flex-col items-center justify-center p-4">
-      
-      {/* GLOBAL BROADCAST BANNER - VISIBILE A TUTTI */}
+    <div className="w-full min-h-screen relative flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden bg-gradient-to-b from-[#050b18] via-[#0a1a3a] to-[#050b18] text-white">
       {globalBroadcast && (
-        <div className="fixed top-0 left-0 right-0 bg-red-700 z-[200] py-6 border-b-4 border-white shadow-[0_10px_50px_rgba(255,0,0,0.9)] animate-bounce-slow">
-          <div className="flex items-center justify-center gap-6 overflow-hidden whitespace-nowrap">
-             <span className="text-xl md:text-3xl font-black uppercase tracking-tighter italic text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
-               ⚠️ BROADCAST: {globalBroadcast} ⚠️ {globalBroadcast} ⚠️ {globalBroadcast} ⚠️
-             </span>
+        <div className="fixed top-0 left-0 right-0 bg-red-700 z-[300] py-4 md:py-6 border-b-4 border-white shadow-[0_10px_50px_rgba(255,0,0,0.8)] overflow-hidden">
+          <div className="whitespace-nowrap flex animate-marquee">
+             <span className="text-lg md:text-3xl font-black uppercase italic text-white px-10">⚠️ {globalBroadcast} ⚠️</span>
+             <span className="text-lg md:text-3xl font-black uppercase italic text-white px-10">⚠️ {globalBroadcast} ⚠️</span>
+          </div>
+        </div>
+      )}
+
+      {gameState !== GameState.REGISTRATION && (
+        <div className="fixed top-4 right-4 z-[400] flex flex-col items-end gap-2 pointer-events-none">
+          {/* Gem HUD */}
+          <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-yellow-500 px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] pointer-events-auto">
+            <div className="flex items-center gap-3">
+              <span className="text-xl md:text-2xl">💎</span>
+              <span className="text-yellow-500 font-black text-sm md:text-lg tracking-widest">{stats.gems.toLocaleString()}</span>
+            </div>
+          </div>
+          {/* XP HUD */}
+          <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-orange-500 px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(249,115,22,0.3)] pointer-events-auto">
+            <div className="flex items-center gap-3">
+              <span className="text-xl md:text-2xl text-orange-500 font-black">XP</span>
+              <span className="text-white font-black text-sm md:text-lg tracking-widest">{stats.xp.toLocaleString()}</span>
+            </div>
           </div>
         </div>
       )}
 
       <style>{`
-        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
-        .animate-bounce-slow { animation: bounce-slow 2s infinite ease-in-out; }
-        @keyframes fall { 0% { transform: translateY(0vh) translateX(0px); } 100% { transform: translateY(120vh) translateX(50px); } }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .animate-marquee { animation: marquee 15s linear infinite; display: inline-flex; width: 200%; }
+        @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); } 100% { transform: translateY(110vh) rotate(360deg); } }
         .animate-fall { animation: fall linear infinite; }
+        @keyframes rainbow-text { 0% { color: #ff0000; } 20% { color: #ffff00; } 40% { color: #00ff00; } 60% { color: #00ffff; } 80% { color: #0000ff; } 100% { color: #ff00ff; } }
       `}</style>
 
       <div className="absolute inset-0 pointer-events-none z-0">
-        {[...Array(30)].map((_, i) => (
-          <div key={i} className="absolute bg-white rounded-full animate-fall" style={{ width: `${Math.random() * 8 + 2}px`, height: `${Math.random() * 8 + 2}px`, left: `${Math.random() * 100}%`, top: `-${Math.random() * 20}%`, opacity: Math.random() * 0.6 + 0.2, animationDuration: `${Math.random() * 5 + 5}s`, animationDelay: `${Math.random() * 10}s` }} />
+        {[...Array(150)].map((_, i) => (
+          <div key={i} className="absolute bg-white/20 rounded-full animate-fall" style={{ width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`, left: `${Math.random() * 100}%`, top: `-${Math.random() * 20}%`, animationDuration: `${Math.random() * 5 + 7}s`, animationDelay: `${Math.random() * 10}s` }} />
         ))}
       </div>
 
-      <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
+      <div className="relative z-10 w-full flex flex-col items-center">
         {gameState === GameState.REGISTRATION && <Registration onRegister={handleRegister} />}
-
         {gameState === GameState.MENU && (
-          <div className="text-center space-y-6 md:space-y-10 animate-in fade-in zoom-in duration-500 w-full flex flex-col items-center">
-            <h1 className="text-4xl md:text-8xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_15px_rgba(255,0,0,0.6)]">DIE AGAIN 🎄</h1>
-            <div className="flex flex-col items-center gap-4">
+          <div className="text-center space-y-8 md:space-y-12 animate-in fade-in zoom-in duration-700 w-full max-w-4xl flex flex-col items-center px-4">
+            <h1 className="text-5xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_15px_30px_rgba(255,0,0,0.5)] leading-tight uppercase">DIE AGAIN 🎄</h1>
+            <div className="flex flex-col items-center gap-6">
               <PlayerPreview skinId={stats.activeSkinId} />
-              <p className="text-[8px] uppercase tracking-[0.4em] font-black" style={{ color: stats.nameColor === 'rainbow' ? undefined : stats.nameColor, animation: stats.nameColor === 'rainbow' ? 'rainbow-text 2s infinite linear' : 'none' }}>{t('welcomeBack', stats.language)}, {stats.username}.</p>
+              <p className="text-[10px] md:text-xs uppercase tracking-[0.5em] font-black" style={{ color: stats.nameColor === 'rainbow' ? undefined : stats.nameColor, animation: stats.nameColor === 'rainbow' ? 'rainbow-text 2s infinite linear' : 'none' }}>{t('welcomeBack', stats.language)}, {stats.username}</p>
             </div>
-            <div className="flex flex-col gap-3 w-full">
-              <button onClick={startGame} className="bg-red-700 text-white py-4 px-10 text-xl font-bold border-4 border-white/20 uppercase pixel-shadow hover:bg-red-600 transition-all">{t('playLevel', stats.language)} {stats.currentLevelId}</button>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setGameState(GameState.LUCKY_SPIN)} className="bg-zinc-800/80 backdrop-blur-sm text-yellow-400 py-3 text-[8px] font-bold border-b-4 border-yellow-900 uppercase">{t('spin', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.DAILY_REWARDS)} className="bg-zinc-800/80 backdrop-blur-sm text-purple-400 py-3 text-[8px] font-bold border-b-4 border-purple-900 uppercase">{t('gifts', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.PASS_SHOP)} className="bg-yellow-600 text-black py-3 text-[8px] font-black border-b-4 border-yellow-900 uppercase">{t('pass', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.SKIN_SHOP)} className="bg-zinc-800/80 backdrop-blur-sm text-indigo-400 py-3 text-[8px] font-bold border-b-4 border-indigo-900 uppercase">{t('shop', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.SECRET_CODES)} className="bg-zinc-800/80 backdrop-blur-sm text-red-500 py-3 text-[8px] font-bold border-b-4 border-red-900 uppercase">{t('codes', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.FEEDBACK)} className="bg-zinc-800/80 backdrop-blur-sm text-cyan-400 py-3 text-[8px] font-bold border-b-4 border-cyan-900 uppercase">{t('feedback', stats.language)}</button>
+            <div className="flex flex-col gap-4 w-full max-w-lg">
+              <button onClick={startGame} className="bg-red-700 text-white py-6 px-12 text-2xl md:text-4xl font-black border-4 border-white/30 uppercase pixel-shadow hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-[0_10px_0_#991b1b]">{t('playLevel', stats.language)} {stats.currentLevelId}</button>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => setGameState(GameState.DIE_PASS)} className="bg-orange-600 text-white py-4 text-[10px] md:text-xs font-black border-b-4 border-orange-900 uppercase hover:bg-orange-500 animate-pulse shadow-[0_0_15px_rgba(234,88,12,0.5)]">DIE PASS 🎫</button>
+                <button onClick={() => setGameState(GameState.LUCKY_SPIN)} className="bg-zinc-800/90 text-yellow-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-yellow-900 uppercase hover:bg-zinc-700">{t('spin', stats.language)}</button>
+                <button onClick={() => setGameState(GameState.DAILY_REWARDS)} className="bg-zinc-800/90 text-purple-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-purple-900 uppercase hover:bg-zinc-700">{t('gifts', stats.language)}</button>
+                <button onClick={() => setGameState(GameState.PASS_SHOP)} className="bg-yellow-600 text-black py-4 text-[10px] md:text-xs font-black border-b-4 border-yellow-900 uppercase hover:bg-yellow-500">{t('pass', stats.language)}</button>
+                <button onClick={() => setGameState(GameState.SKIN_SHOP)} className="bg-zinc-800/90 text-indigo-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-indigo-900 uppercase hover:bg-zinc-700">{t('shop', stats.language)}</button>
+                <button onClick={() => setGameState(GameState.SECRET_CODES)} className="bg-zinc-800/90 text-red-500 py-4 text-[10px] md:text-xs font-black border-b-4 border-red-900 uppercase hover:bg-zinc-700">{t('codes', stats.language)}</button>
+                {stats.missionsUnlocked && <button onClick={() => setGameState(GameState.MISSIONS)} className="bg-zinc-100 text-black py-4 text-[10px] md:text-xs font-black border-b-4 border-zinc-400 uppercase hover:bg-white animate-pulse col-span-2">{t('missions', stats.language)} 🎯</button>}
               </div>
-              
-              {stats.adminAbuseActive && (
-                <button 
-                  onClick={() => setAdminPanelOpen(true)}
-                  className="bg-green-600 text-black py-5 text-[12px] font-black border-4 border-black uppercase animate-pulse shadow-[0_0_25px_#22c55e]"
-                >
-                  CONSOLE ADMIN ABUSE ⚡
-                </button>
-              )}
-            </div>
-            
-            <div className="flex justify-center gap-10 text-[8px] text-zinc-400 uppercase pt-6">
-              <div>{t('deaths', stats.language)}: {stats.deaths}</div>
-              <div className="text-yellow-500 font-bold">{t('gems', stats.language)}: {stats.gems}</div>
+              {!stats.missionsUnlocked && <button onClick={() => setGameState(GameState.FEEDBACK)} className="w-full bg-zinc-800/90 text-cyan-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-cyan-900 uppercase hover:bg-zinc-700">{t('feedback', stats.language)}</button>}
+              <button onClick={() => setGameState(GameState.FIRE_DASH_GROUP)} className="w-full bg-orange-600 text-white py-4 text-xs font-black border-b-4 border-orange-900 uppercase hover:bg-orange-500 transition-all shadow-[0_4px_0_rgba(234,88,12,0.5)]">{t('fireDashGroup', stats.language)} 🔥</button>
+              {stats.adminAbuseActive && <button onClick={() => setAdminPanelOpen(true)} className="bg-green-600 text-black py-6 text-sm font-black border-4 border-black uppercase animate-pulse shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:bg-green-400">TERMINALE ABUSO POTERE ⚡</button>}
             </div>
           </div>
         )}
       </div>
 
-      {/* ADMIN PANEL TERMINAL - HACKER STYLE */}
       {adminPanelOpen && (
-        <div className="fixed inset-0 bg-black/98 z-[250] flex items-center justify-center p-4">
-          <div className="bg-black border-4 border-green-500 p-8 w-full max-w-lg font-mono text-green-400 shadow-[0_0_60px_#22c55e]">
-            <h2 className="text-2xl font-bold mb-8 text-center underline tracking-tighter">MODALITÀ ABUSO POTERE</h2>
-            
+        <div className="fixed inset-0 bg-black/98 z-[400] flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="bg-black border-4 border-green-500 p-6 md:p-10 w-full max-w-xl font-mono text-green-400 shadow-[0_0_80px_rgba(34,197,94,0.4)]">
+            <h2 className="text-2xl md:text-3xl font-black mb-10 text-center underline tracking-widest text-green-500 uppercase italic">CONSOLE ABUSO</h2>
             <div className="space-y-8">
-              <div className="bg-zinc-950 p-4 border border-green-900">
-                <label className="block text-[10px] mb-2 font-bold uppercase text-green-300">📢 MESSAGGIO GLOBALE (SUL GIOCO):</label>
-                <input 
-                  value={adminMsgInput}
-                  onChange={(e) => setAdminMsgInput(e.target.value)}
-                  className="w-full bg-black border border-green-900 p-4 text-xs focus:outline-none focus:border-green-400 text-green-400"
-                  placeholder="Scrivi qui per inviare a TUTTI..."
-                />
-              </div>
-
-              <div className="bg-zinc-950 p-4 border border-yellow-900">
-                <label className="block text-[10px] mb-2 font-bold uppercase text-yellow-500">💎 QUANTITÀ GEMME (INFINITE):</label>
-                <input 
-                  type="number"
-                  value={adminGemInput}
-                  onChange={(e) => setAdminGemInput(parseInt(e.target.value) || 0)}
-                  className="w-full bg-black border border-yellow-900 p-4 text-sm focus:outline-none focus:border-yellow-400 text-yellow-500 font-black"
-                  placeholder="Inserisci quantità gemme..."
-                />
-              </div>
-
-              <button 
-                onClick={triggerAdminAbuse}
-                className="w-full bg-green-600 text-black py-5 font-black text-[14px] uppercase border-b-8 border-green-900 hover:bg-green-400 transition-all active:translate-y-2 active:border-b-0"
-              >
-                ESEGUI COMANDO ABUSO
-              </button>
-
-              <button 
-                onClick={() => setAdminPanelOpen(false)}
-                className="w-full text-center text-zinc-600 hover:text-white text-[10px] font-bold uppercase mt-4"
-              >
-                DISCONNETTI TERMINALE
-              </button>
+              <div className="bg-zinc-950 p-4 border border-green-900/50"><label className="block text-[8px] md:text-[10px] mb-3 font-bold uppercase text-green-300">📢 BROADCAST:</label><input value={adminMsgInput} onChange={(e) => setAdminMsgInput(e.target.value)} className="w-full bg-black border border-green-900 p-4 text-xs md:text-sm focus:outline-none focus:border-green-400 text-green-400" placeholder="Messaggio globale..." /></div>
+              <div className="bg-zinc-950 p-4 border border-yellow-900/50"><label className="block text-[8px] md:text-[10px] mb-3 font-bold uppercase text-yellow-500">💎 GEM RAIN:</label><input type="number" value={adminGemInput} onChange={(e) => setAdminGemInput(parseInt(e.target.value) || 0)} className="w-full bg-black border border-yellow-900 p-4 text-lg text-yellow-500 font-black" placeholder="Quantità..." /></div>
+              <button onClick={triggerAdminAbuse} className="w-full bg-green-600 text-black py-6 font-black text-lg uppercase border-b-8 border-green-900 hover:bg-green-400 transition-all">ESEGUI ABUSO POTERE</button>
+              <button onClick={() => setAdminPanelOpen(false)} className="w-full text-center text-zinc-700 hover:text-white text-[10px] font-bold uppercase mt-6">CHIUDI TERMINALE</button>
             </div>
           </div>
         </div>
       )}
 
       {gameState === GameState.PLAYING && (
-        <div className="relative w-full max-w-[1000px] flex flex-col items-center gap-4 z-20">
-          <button onClick={() => setGameState(GameState.MENU)} className="absolute top-4 right-4 z-50 bg-black/60 hover:bg-black border-2 border-white/20 px-4 py-2 text-[8px] font-bold uppercase tracking-widest text-white transition-all">{t('menu', stats.language)}</button>
-          <GameEngine 
-            level={currentLevel} 
-            gameState={gameState} 
-            onDeath={handleDeath} 
-            onWin={handleWin} 
-            activeSkinId={stats.activeSkinId} 
-            lang={stats.language} 
-            userStats={stats} 
-            releaseGems={activeGemRain > 0}
-            gemCount={activeGemRain}
-            onJackpot={handleJackpot}
-          />
+        <div className="relative w-full h-full max-w-7xl flex flex-col items-center justify-center gap-4 z-20">
+          <button onClick={() => setGameState(GameState.MENU)} className="absolute top-4 left-4 z-[100] bg-black/80 hover:bg-red-600 border-2 border-white/30 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all">{t('menu', stats.language)}</button>
+          <GameEngine level={currentLevel} gameState={gameState} onDeath={handleDeath} onWin={handleWin} activeSkinId={stats.activeSkinId} lang={stats.language} userStats={stats} releaseGems={activeGemRain > 0} gemCount={activeGemRain} onJackpot={handleJackpot} />
         </div>
       )}
 
       {gameState === GameState.GAMEOVER && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
-          <div className="text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 w-full max-w-md aspect-square bg-zinc-950 p-8 border-8 border-red-600 pixel-shadow overflow-hidden">
-            <h2 className="text-3xl md:text-5xl font-black text-red-600 tracking-tighter italic animate-pulse mb-4 uppercase">SCLERATO! ❄️</h2>
-            <div className="mb-4"><PlayerPreview skinId={stats.activeSkinId} /></div>
-            <div className={`transition-all duration-500 w-full ${lastDeathMessage ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="bg-red-900/20 border-l-4 border-red-600 p-3 mb-6 w-full overflow-y-auto max-h-24">
-                <p className="text-red-400 text-[10px] italic uppercase font-bold tracking-tight">"{lastDeathMessage}"</p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3 w-full">
-              <button onClick={startGame} className="bg-red-600 text-white py-4 px-10 text-lg font-bold border-b-8 border-red-900 hover:bg-red-500 transition-all active:scale-95 uppercase">RIPROVA</button>
-              <button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-zinc-400 py-3 px-10 text-[10px] font-bold border-b-4 border-zinc-950 hover:bg-zinc-700 transition-all active:scale-95 uppercase">{t('menu', stats.language)}</button>
-            </div>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[500] p-4">
+          <div className="text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 w-full max-w-md bg-zinc-950 p-6 md:p-10 border-8 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]">
+            <h2 className="text-4xl md:text-6xl font-black text-red-600 italic animate-pulse mb-6 uppercase">SCLERATO! ❄️</h2>
+            <div className="mb-6 scale-110"><PlayerPreview skinId={stats.activeSkinId} /></div>
+            <div className="bg-red-950/40 border-l-4 border-red-600 p-4 mb-8 w-full"><p className="text-red-400 text-xs italic uppercase font-bold">"{lastDeathMessage}"</p></div>
+            <div className="flex flex-col gap-4 w-full"><button onClick={startGame} className="bg-red-600 text-white py-5 text-xl font-black border-b-8 border-red-900 uppercase">RIPROVA</button><button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button></div>
           </div>
         </div>
       )}
 
       {gameState === GameState.WIN && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
-          <div className="text-center flex flex-col items-center justify-center animate-in zoom-in bg-zinc-900 p-8 border-8 border-green-500 w-full max-w-md aspect-square pixel-shadow overflow-hidden">
-            <h2 className="text-3xl md:text-5xl font-bold text-green-500 animate-bounce mb-4 uppercase tracking-tighter">{t('winTitle', stats.language)} 🎁</h2>
-            <div className="text-xl text-yellow-400 font-black mb-8 tracking-widest">+150 💎</div>
-            <div className="flex flex-col gap-3 w-full">
-              <button onClick={() => {
-                const nextId = stats.currentLevelId;
-                setCurrentLevel(LEVELS.find(l => l.id === nextId) || generateProceduralLevel(nextId));
-                setGameState(GameState.PLAYING);
-              }} className="bg-green-600 text-white py-4 px-8 font-bold w-full uppercase border-b-8 border-green-900 text-lg hover:bg-green-500 active:scale-95 transition-all">{t('nextLevel', stats.language, { n: stats.currentLevelId })}</button>
-              <button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-zinc-400 py-3 px-10 text-[10px] font-bold border-b-4 border-zinc-950 hover:bg-zinc-700 transition-all uppercase">{t('menu', stats.language)}</button>
-            </div>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[500] p-4">
+          <div className="text-center flex flex-col items-center animate-in zoom-in bg-zinc-900 p-6 md:p-10 border-8 border-green-500 w-full max-w-md shadow-[0_0_50px_rgba(34,197,94,0.5)]">
+            <h2 className="text-4xl md:text-6xl font-black text-green-500 animate-bounce mb-6 uppercase tracking-tighter">GRANDE! 🎁</h2>
+            <div className="text-2xl text-yellow-400 font-black mb-10 tracking-widest">+150 💎 | +100 XP</div>
+            <div className="flex flex-col gap-4 w-full"><button onClick={() => { const nextId = stats.currentLevelId; setCurrentLevel(LEVELS.find(l => l.id === nextId) || generateProceduralLevel(nextId)); setGameState(GameState.PLAYING); }} className="bg-green-600 text-white py-5 px-8 font-black w-full uppercase border-b-8 border-green-900 text-xl">LIVELLO {stats.currentLevelId} →</button><button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button></div>
           </div>
         </div>
       )}
 
-      {gameState === GameState.LUCKY_SPIN && <LuckySpin lang={stats.language} userGems={stats.gems} onWin={(net) => { setStats(prev => ({ ...prev, gems: prev.gems + net })); setGameState(GameState.MENU); }} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.DIE_PASS && <DiePass stats={stats} onClaim={handleClaimPassReward} onBuyPlus={handleBuyDiePassPlus} onClose={() => setGameState(GameState.MENU)} lang={stats.language} />}
+      {gameState === GameState.LUCKY_SPIN && <LuckySpin lang={stats.language} userGems={stats.gems} onWin={(net) => { setStats(prev => ({ ...prev, gems: prev.gems + net, missions: prev.missions.map(m => m.id === 'm3' ? { ...m, current: m.current + 1 } : m) })); setGameState(GameState.MENU); }} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.SECRET_CODES && <SecretCodes lang={stats.language} onRedeem={handleRedeemCode} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.DAILY_REWARDS && <DailyRewards lang={stats.language} streak={stats.dailyStreak} alreadyClaimed={isDailyClaimed} onClaim={(a) => { setStats(prev => ({ ...prev, gems: prev.gems + a, lastDailyClaim: new Date().toDateString(), dailyStreak: (prev.dailyStreak + 1) % 8 })); setGameState(GameState.MENU); }} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.SKIN_SHOP && <SkinShop lang={stats.language} userGems={stats.gems} unlockedSkins={stats.unlockedSkins} activeSkinId={stats.activeSkinId} membership={stats.membership} onBuy={(s) => setStats(p => ({...p, gems: p.gems - s.price, unlockedSkins: [...p.unlockedSkins, s.id], activeSkinId: s.id}))} onEquip={(id) => setStats(p => ({...p, activeSkinId: id}))} onClose={() => setGameState(GameState.MENU)} />}
-      {gameState === GameState.PASS_SHOP && <PassShop lang={stats.language} userStats={stats} onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} onBuyVip={() => { if(stats.gems >= 20000) {
-        const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id);
-        setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]}));
-      } }} onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.PASS_SHOP && <PassShop lang={stats.language} userStats={stats} onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} onBuyVip={() => { if(stats.gems >= 20000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.FEEDBACK && <Feedback lang={stats.language} username={stats.username} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.FIRE_DASH_GROUP && <FireDashGroup lang={stats.language} onGoToIdea={() => setGameState(GameState.GAME_IDEA)} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.GAME_IDEA && <GameIdea username={stats.username} lang={stats.language} onBack={() => setGameState(GameState.FIRE_DASH_GROUP)} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.MISSIONS && <Missions missions={stats.missions} onClaim={handleClaimMission} lang={stats.language} onClose={() => setGameState(GameState.MENU)} />}
     </div>
   );
 };

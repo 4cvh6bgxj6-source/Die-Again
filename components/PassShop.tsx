@@ -46,19 +46,8 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
           </div>
 
           {/* CARD VIP */}
-          <div className={`p-6 border-4 rounded-xl flex flex-col gap-4 relative overflow-hidden animate-pulse-subtle ${userStats.membership === 'vip' ? 'border-white bg-gradient-to-br from-red-900/40 via-blue-900/40 to-green-900/40' : 'border-zinc-700 bg-zinc-800'}`}>
-            <style>{`
-              @keyframes rainbow-text {
-                0% { color: #ff0000; }
-                20% { color: #ffff00; }
-                40% { color: #00ff00; }
-                60% { color: #00ffff; }
-                80% { color: #0000ff; }
-                100% { color: #ff00ff; }
-              }
-              .rainbow-vip { animation: rainbow-text 2s infinite linear; }
-            `}</style>
-            <h3 className="text-2xl font-black rainbow-vip uppercase italic">VIP</h3>
+          <div className={`p-6 border-4 rounded-xl flex flex-col gap-4 relative overflow-hidden ${userStats.membership === 'vip' ? 'border-white bg-gradient-to-br from-red-900/40 via-blue-900/40 to-green-900/40' : 'border-zinc-700 bg-zinc-800'}`}>
+            <h3 className="text-2xl font-black uppercase italic" style={{ animation: 'rainbow-text 2s infinite linear' }}>VIP</h3>
             <div className="text-[10px] md:text-xs text-zinc-300 leading-relaxed whitespace-pre-line">
               {t('vipFeatures', lang)}
             </div>
@@ -72,7 +61,7 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
                 {t('buyVip', lang)}
               </button>
             ) : (
-              <div className="mt-4 text-center py-4 bg-white/10 text-white font-bold uppercase text-xs border-2 border-white rounded rainbow-vip">
+              <div className="mt-4 text-center py-4 bg-white/10 text-white font-bold uppercase text-xs border-2 border-white rounded" style={{ animation: 'rainbow-text 2s infinite linear' }}>
                 ULTIMATE VIP
               </div>
             )}
@@ -95,8 +84,8 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
               {userStats.membership === 'vip' && (
                 <button
                   onClick={() => onChangeNameColor('rainbow')}
-                  className={`px-4 h-10 rounded border-4 font-black text-[8px] rainbow-vip transition-transform active:scale-90 ${userStats.nameColor === 'rainbow' ? 'border-white scale-110' : 'border-transparent opacity-60'}`}
-                  style={{ background: 'linear-gradient(to right, red, yellow, green, cyan, blue, magenta)' }}
+                  className={`px-4 h-10 rounded border-4 font-black text-[8px] transition-transform active:scale-90 ${userStats.nameColor === 'rainbow' ? 'border-white scale-110' : 'border-transparent opacity-60'}`}
+                  style={{ background: 'linear-gradient(to right, red, yellow, green, cyan, blue, magenta)', animation: 'rainbow-text 2s infinite linear' }}
                 >
                   RAINBOW
                 </button>

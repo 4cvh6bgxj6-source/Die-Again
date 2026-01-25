@@ -26,17 +26,32 @@ const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkin
       case 'neon': return 'NEON X';
       case 'inferno': return 'INFERNO';
       case 'admin': return 'ADMIN';
+      case 'admin_power': return 'ADMIN POWER';
+      case 'cyber_ninja': return 'CYBER NINJA';
+      case 'void_walker': return 'VOID WALKER';
+      case 'glitch_master': return 'GLITCH MASTER';
+      case 'dragon_lord': return 'DRAGON LORD';
+      case 'galaxy_god': return 'GALAXY GOD';
       default: return skinId.toUpperCase();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 flex items-start justify-center z-50 p-4 overflow-y-auto py-10">
+    <div className="fixed inset-0 bg-black/95 flex items-start justify-center z-[600] p-4 overflow-y-auto py-10">
       <div className="bg-zinc-900 border-4 border-indigo-500 p-6 md:p-8 rounded-lg w-full max-w-3xl my-auto pixel-shadow relative">
+        
+        {/* Pulsante di chiusura X in alto a destra */}
+        <button 
+          onClick={onClose}
+          className="absolute -top-4 -right-4 bg-red-600 text-white w-10 h-10 flex items-center justify-center border-4 border-white font-black hover:bg-red-500 active:scale-90 transition-all z-10"
+        >
+          X
+        </button>
+
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
           <h2 className="text-2xl md:text-3xl text-indigo-400 uppercase tracking-tighter font-black">{t('skinShop', lang)}</h2>
           <div className="bg-indigo-950 px-4 py-2 border-2 border-indigo-400 rounded">
-            <span className="text-yellow-400 font-bold text-xs md:text-sm">{userGems} {t('gems', lang)}</span>
+            <span className="text-yellow-400 font-bold text-xs md:text-sm">{userGems.toLocaleString()} {t('gems', lang)}</span>
           </div>
         </div>
 
@@ -64,7 +79,7 @@ const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkin
                   <div className="text-[10px] md:text-sm font-bold text-white mb-1">{getSkinName(skin.id)}</div>
                   {!isUnlocked && (
                     <div className="text-[8px] md:text-[10px] text-yellow-500">
-                      {skin.isVipOnly ? 'SOLO VIP' : skin.isCodeOnly ? 'SOLO CODICE' : `${skin.price} ${t('gems', lang)}`}
+                      {skin.isVipOnly ? 'SOLO VIP' : skin.isCodeOnly ? 'ESCLUSIVA' : `${skin.price} ${t('gems', lang)}`}
                     </div>
                   )}
                 </div>
@@ -91,7 +106,7 @@ const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkin
                         : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
                     }`}
                   >
-                    {skin.isVipOnly ? 'VIP REQUIRED' : skin.isCodeOnly ? 'CODE ONLY' : (userGems >= skin.price ? t('buy', lang) : t('insufficientGems', lang))}
+                    {skin.isVipOnly ? 'VIP REQUIRED' : skin.isCodeOnly ? 'PASS/CODE ONLY' : (userGems >= skin.price ? t('buy', lang) : t('insufficientGems', lang))}
                   </button>
                 )}
               </div>
@@ -99,10 +114,10 @@ const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkin
           })}
         </div>
 
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-6 border-t border-zinc-800">
           <button
             onClick={onClose}
-            className="bg-white text-black py-3 px-10 font-black hover:bg-zinc-200 transition-all active:scale-95 uppercase text-[10px] md:text-xs border-b-4 border-zinc-400"
+            className="bg-white text-black py-4 px-12 font-black hover:bg-zinc-200 transition-all active:scale-95 uppercase text-[12px] border-b-4 border-zinc-400 shadow-lg"
           >
             {t('close', lang)}
           </button>

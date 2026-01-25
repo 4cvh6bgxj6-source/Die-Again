@@ -6,12 +6,15 @@ export enum GameState {
   DAILY_REWARDS,
   SKIN_SHOP,
   PASS_SHOP,
+  DIE_PASS,
   FEEDBACK,
   SECRET_CODES,
   MISSIONS,
   PLAYING,
   GAMEOVER,
-  WIN
+  WIN,
+  FIRE_DASH_GROUP,
+  GAME_IDEA
 }
 
 export type Language = 'it' | 'en';
@@ -58,10 +61,20 @@ export interface Mission {
   completed: boolean;
 }
 
+export interface PassReward {
+  level: number;
+  xpRequired: number;
+  freeReward?: { type: 'gems' | 'skin'; value: any; amount?: number };
+  plusReward?: { type: 'gems' | 'skin'; value: any; amount?: number };
+}
+
 export interface UserStats {
   username: string;
   deaths: number;
   gems: number;
+  xp: number;
+  isDiePassPlus: boolean;
+  claimedRewards: string[]; // formato: "level_free" o "level_plus"
   currentLevelId: number;
   lastDailyClaim: string | null;
   dailyStreak: number;

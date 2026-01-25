@@ -69,7 +69,15 @@ export const translations = {
     completed: "FATTO",
     fly: "VOLA",
     noTraps: "NO TRAPS",
-    finish: "FINISCI"
+    finish: "FINISCI",
+    fireDashGroup: "FIRE DASH GROUP",
+    whoAreWe: "L'Anima del Gruppo",
+    fireDashDesc: "Siamo architetti del codice e sognatori di pixel. Non cerchiamo profitto, ma sorrisi (e qualche imprecazione per i livelli difficili). Creiamo per passione, viviamo per farvi divertire senza pubblicità, spam o costi. Il gioco puro è il nostro unico credo.",
+    tellUsIdea: "DICCI UN'IDEA PER UN GIOCO",
+    ideaPlaceholder: "Descrivi il gioco dei tuoi sogni...",
+    sendIdea: "INVIA IDEA AL GRUPPO",
+    ideaSent: "IDEA RICEVUTA! Gli sviluppatori la leggeranno con cura.",
+    back: "INDIETRO"
   },
   en: {
     newUser: "NEW USER",
@@ -138,7 +146,15 @@ export const translations = {
     completed: "DONE",
     fly: "FLY",
     noTraps: "NO TRAPS",
-    finish: "FINISH"
+    finish: "FINISH",
+    fireDashGroup: "FIRE DASH GROUP",
+    whoAreWe: "Our Group's Soul",
+    fireDashDesc: "We are code architects and pixel dreamers. We don't seek profit, but smiles (and maybe a few rants about hard levels). We create out of passion, we live to entertain you without ads, spam, or costs. Pure gaming is our only creed.",
+    tellUsIdea: "TELL US A GAME IDEA",
+    ideaPlaceholder: "Describe your dream game...",
+    sendIdea: "SEND IDEA TO GROUP",
+    ideaSent: "IDEA RECEIVED! The developers will read it carefully.",
+    back: "BACK"
   }
 };
 

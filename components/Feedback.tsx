@@ -28,66 +28,64 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
     // Invio al Webhook di Discord
     fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         embeds: [{
-          title: "💬 Nuovo Feedback Giocatore",
-          color: 3447003,
+          title: "💬 Feedback Inviato",
+          color: 0x3498db,
           fields: [
-            { name: "Utente", value: username, inline: true },
+            { name: "Giocatore", value: username, inline: true },
             { name: "Messaggio", value: text },
-            { name: "Lingua", value: lang }
+            { name: "Lingua", value: lang.toUpperCase(), inline: true }
           ],
           timestamp: new Date().toISOString()
         }]
       }),
-    }).catch(err => console.error("Errore Discord Feedback:", err));
+    }).catch(err => console.error("Discord Feedback Error:", err));
 
-    // Richiesta a Gemini per la risposta troll
+    // Risposta "Troll" dall'AI
     try {
       const aiResponse = await processFeedback(username, text, lang);
       setResponse(aiResponse);
     } catch (err) {
-      setResponse(lang === 'it' ? "Feedback ricevuto. Adesso torna a giocare e smettila di piangere." : "Feedback received. Now go back to playing and stop crying.");
+      setResponse(lang === 'it' ? "Abbiamo letto il tuo feedback e deciso che hai solo bisogno di fare più pratica." : "We read your feedback and decided you just need more practice.");
     } finally {
       setIsLoadingAI(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-[60] p-4">
-      <div className="bg-zinc-900 border-4 border-cyan-500 p-8 rounded-lg w-full max-w-xl pixel-shadow flex flex-col gap-6">
-        <h2 className="text-2xl text-cyan-400 uppercase tracking-widest font-black">{t('feedback', lang)}</h2>
+    <div className="fixed inset-0 bg-black/98 flex items-center justify-center z-[600] p-4 backdrop-blur-lg">
+      <div className="bg-zinc-900 border-4 border-cyan-500 p-6 md:p-10 rounded-lg w-full max-w-xl pixel-shadow flex flex-col gap-6">
+        <h2 className="text-2xl md:text-3xl text-cyan-400 uppercase tracking-widest font-black italic">{t('feedback', lang)}</h2>
         
         {!isSubmitted ? (
           <>
-            <p className="text-[10px] text-zinc-500 uppercase">{t('feedbackDesc', lang)}</p>
+            <p className="text-[10px] md:text-xs text-zinc-400 uppercase leading-relaxed">{t('feedbackDesc', lang)}</p>
             <textarea 
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={t('feedbackPlaceholder', lang)}
-              className="w-full h-32 bg-black border-2 border-zinc-800 p-4 text-white font-bold placeholder:text-zinc-700 focus:outline-none focus:border-cyan-900"
+              className="w-full h-40 bg-black border-2 border-zinc-800 p-4 text-white font-bold placeholder:text-zinc-800 focus:outline-none focus:border-cyan-600 transition-colors"
             />
             <button
               onClick={handleSubmit}
               disabled={!text.trim()}
-              className="bg-cyan-600 text-white py-4 font-bold hover:bg-cyan-500 disabled:bg-zinc-800 uppercase text-sm"
+              className="bg-cyan-600 text-white py-5 font-black hover:bg-cyan-500 disabled:bg-zinc-800 uppercase text-lg border-b-8 border-cyan-900 active:translate-y-2 active:border-b-0"
             >
-              INVIA FEEDBACK
+              INVIA SEGNALAZIONE
             </button>
           </>
         ) : (
-          <div className="space-y-6 animate-in zoom-in duration-300 text-center">
-            <div className="text-green-400 font-bold uppercase text-[12px] tracking-tight leading-normal border-2 border-green-900 p-2 bg-green-950/20">
+          <div className="space-y-8 animate-in zoom-in duration-300 text-center py-4">
+            <div className="text-green-400 font-black uppercase text-sm border-2 border-green-900 p-4 bg-green-950/30">
               {t('feedbackSent', lang)}
             </div>
             
-            <div className="bg-zinc-950 p-6 border-l-4 border-cyan-500 italic text-cyan-200 text-sm text-left min-h-[80px] flex items-center">
+            <div className="bg-black p-6 border-l-8 border-cyan-500 italic text-cyan-200 text-sm md:text-lg text-left shadow-inner">
               {isLoadingAI ? (
-                <div className="w-full flex justify-center">
-                  <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-full flex justify-center py-4">
+                  <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : (
                 <span>"{response}"</span>
@@ -96,7 +94,7 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
 
             <button
               onClick={onClose}
-              className="w-full bg-white text-black py-3 font-black uppercase text-xs hover:bg-zinc-200 transition-colors"
+              className="w-full bg-white text-black py-4 font-black uppercase text-xs hover:bg-zinc-200 transition-colors"
             >
               {t('feedbackAcknowledge', lang)}
             </button>
@@ -104,7 +102,7 @@ const Feedback: React.FC<FeedbackProps> = ({ username, onClose, lang }) => {
         )}
 
         {!isSubmitted && (
-          <button onClick={onClose} className="text-zinc-600 text-[10px] uppercase hover:text-white">{t('cancel', lang)}</button>
+          <button onClick={onClose} className="text-zinc-600 text-[10px] uppercase font-bold hover:text-white">{t('cancel', lang)}</button>
         )}
       </div>
     </div>
