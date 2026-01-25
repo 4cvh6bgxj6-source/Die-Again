@@ -58,6 +58,18 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
   const collectedGemsCount = useRef(0);
   const totalGemsReleased = useRef(0);
 
+  // Rilevazione dispositivo touch
+  useEffect(() => {
+    const checkTouch = () => {
+      setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkTouch();
+    window.addEventListener('resize', () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+      checkTouch();
+    });
+  }, []);
+
   const resetObjects = useCallback((targetLevel: LevelData) => {
     const baseObjects = targetLevel.objects.map(obj => ({
       ...obj,
@@ -275,7 +287,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
         } else { ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y); }
       });
 
-      // Player Render Fix: Aggiunte Braccia e Gambe
+      // Player Render
       ctx.save(); ctx.translate(player.pos.x + PLAYER_SIZE/2, player.pos.y + PLAYER_SIZE/2);
       if (!player.facingRight) ctx.scale(-1, 1);
       
@@ -299,12 +311,12 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
       const walk = player.isMoving ? Math.sin(time) * 10 : 0;
 
       // Braccia
-      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(10, 2 + wave); ctx.stroke(); // Braccio Destro
-      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(-10, 2 - wave); ctx.stroke(); // Braccio Sinistro
+      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(10, 2 + wave); ctx.stroke(); 
+      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(-10, 2 - wave); ctx.stroke(); 
       
       // Gambe
-      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(walk, 20); ctx.stroke(); // Gamba Destra
-      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-walk, 20); ctx.stroke(); // Gamba Sinistra
+      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(walk, 20); ctx.stroke(); 
+      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-walk, 20); ctx.stroke(); 
 
       ctx.restore();
     };
@@ -312,6 +324,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
   }, [player, activeSkinId, adminNoTraps, isUltimateAdmin]);
 
   const handleJoystickMove = (e: React.TouchEvent) => {
+    e.preventDefault();
     const touch = e.touches[0]; const joystick = e.currentTarget.getBoundingClientRect();
     const centerX = joystick.left + joystick.width / 2; const centerY = joystick.top + joystick.height / 2;
     const diffX = touch.clientX - centerX; const diffY = touch.clientY - centerY;
@@ -323,11 +336,20 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     if (adminFly) { keys.current['VirtualUp'] = diffY < -20; keys.current['VirtualDown'] = diffY > 20; }
   };
 
+  const handleJoystickEnd = () => {
+    keys.current['VirtualLeft'] = false; 
+    keys.current['VirtualRight'] = false; 
+    keys.current['VirtualUp'] = false; 
+    keys.current['VirtualDown'] = false; 
+    setJoystickPos({ x: 0, y: 0 });
+  };
+
   return (
     <div className={`relative w-full h-full flex flex-col items-center bg-black overflow-hidden border-4 border-indigo-900 ${isPortrait ? 'justify-between pb-8' : 'justify-center'}`}>
       <div className="flex-1 w-full flex items-center justify-center">
         <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="w-full h-auto object-contain max-h-[70vh]" />
       </div>
+
       {isAdmin && (
         <div className={`absolute top-24 left-4 flex gap-2 z-50 ${isPortrait ? 'flex-row' : 'flex-col'}`}>
           <button onClick={() => setAdminFly(!adminFly)} className={`p-2 border-2 text-[8px] font-black uppercase ${adminFly ? 'bg-green-600 text-white' : 'bg-black text-red-900 border-red-900'}`}>{t('fly', lang)}</button>
@@ -335,19 +357,30 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
           <button onClick={onWin} className="p-2 border-2 border-yellow-500 bg-yellow-900 text-yellow-100 text-[8px] font-black uppercase">{t('finish', lang)}</button>
           {isUltimateAdmin && (
             <>
-              <button onClick={destroyMap} className="p-2 border-2 border-red-500 bg-red-900 text-white text-[8px] font-black uppercase">DISTRUGGI MAPPA</button>
-              <button onClick={createNewMap} className="p-2 border-2 border-cyan-500 bg-cyan-900 text-white text-[8px] font-black uppercase">NUOVA MAPPA</button>
+              <button onClick={destroyMap} className="p-2 border-2 border-red-500 bg-red-900 text-white text-[8px] font-black uppercase">DISTRUGGI</button>
+              <button onClick={createNewMap} className="p-2 border-2 border-cyan-500 bg-cyan-900 text-white text-[8px] font-black uppercase">NUOVA</button>
             </>
           )}
         </div>
       )}
+
+      {/* Controlli Touch per Mobile */}
       {isTouchDevice && (
-        <div className={`w-full px-6 flex items-center justify-between pb-4 ${isPortrait ? 'h-40' : 'absolute bottom-4'}`}>
-          <div className="w-24 h-24 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center relative pointer-events-auto" onTouchStart={handleJoystickMove} onTouchMove={handleJoystickMove} onTouchEnd={() => { keys.current['VirtualLeft'] = false; keys.current['VirtualRight'] = false; keys.current['VirtualUp'] = false; keys.current['VirtualDown'] = false; setJoystickPos({ x: 0, y: 0 }); }}>
+        <div className={`w-full px-6 flex items-center justify-between pb-4 pointer-events-none ${isPortrait ? 'h-40' : 'absolute bottom-4'}`}>
+          <div 
+            className="w-24 h-24 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center relative pointer-events-auto touch-none" 
+            onTouchStart={handleJoystickMove} 
+            onTouchMove={handleJoystickMove} 
+            onTouchEnd={handleJoystickEnd}
+          >
             <div className="w-10 h-10 bg-white/40 rounded-full absolute" style={{ transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)` }} />
           </div>
           {!adminFly && (
-            <div className="w-24 h-24 rounded-full border-4 border-red-500/40 bg-red-500/20 flex items-center justify-center pointer-events-auto" onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }} onTouchEnd={() => { keys.current['VirtualJump'] = false; }}>
+            <div 
+              className="w-24 h-24 rounded-full border-4 border-red-500/40 bg-red-500/20 flex items-center justify-center pointer-events-auto touch-none active:scale-90 transition-transform" 
+              onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }} 
+              onTouchEnd={() => { keys.current['VirtualJump'] = false; }}
+            >
               <span className="text-[10px] text-red-100 font-black uppercase">{t('jump', lang)}</span>
             </div>
           )}

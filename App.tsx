@@ -131,10 +131,8 @@ const App: React.FC = () => {
     if (stats.usedCodes.includes(code)) return false;
     let updatedStats = { ...stats, usedCodes: [...stats.usedCodes, code] };
     let valid = false;
-    // NUOVI CODICI RICHIESTI
     if (code === '12.500') { updatedStats.gems += 12500; valid = true; }
     else if (code === '261409') { updatedStats.xp += 261409; valid = true; }
-    // CODICI ESISTENTI
     else if (code === '5000') { updatedStats.gems += 5000; valid = true; } 
     else if (code === 'ADMIN') { updatedStats.unlockedSkins = [...new Set([...updatedStats.unlockedSkins, 'admin'])]; valid = true; } 
     else if (code === 'ADMIN ABUSE') { updatedStats.adminAbuseActive = true; valid = true; }
@@ -186,7 +184,7 @@ const App: React.FC = () => {
   const isDailyClaimed = stats.lastDailyClaim === new Date().toDateString();
 
   return (
-    <div className="w-full min-h-screen relative flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden bg-gradient-to-b from-[#050b18] via-[#0a1a3a] to-[#050b18] text-white">
+    <div className="w-full h-screen relative flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#050b18] via-[#0a1a3a] to-[#050b18] text-white">
       {globalBroadcast && (
         <div className="fixed top-0 left-0 right-0 bg-red-700 z-[300] py-4 md:py-6 border-b-4 border-white shadow-[0_10px_50px_rgba(255,0,0,0.8)] overflow-hidden">
           <div className="whitespace-nowrap flex animate-marquee">
@@ -199,17 +197,17 @@ const App: React.FC = () => {
       {gameState !== GameState.REGISTRATION && (
         <div className="fixed top-4 right-4 z-[400] flex flex-col items-end gap-2 pointer-events-none">
           {/* Gem HUD */}
-          <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-yellow-500 px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] pointer-events-auto">
-            <div className="flex items-center gap-3">
-              <span className="text-xl md:text-2xl">💎</span>
-              <span className="text-yellow-500 font-black text-sm md:text-lg tracking-widest">{stats.gems.toLocaleString()}</span>
+          <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-yellow-500 px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] pointer-events-auto">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-sm md:text-2xl">💎</span>
+              <span className="text-yellow-500 font-black text-[10px] md:text-lg tracking-widest">{stats.gems.toLocaleString()}</span>
             </div>
           </div>
           {/* XP HUD */}
-          <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-orange-500 px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(249,115,22,0.3)] pointer-events-auto">
-            <div className="flex items-center gap-3">
-              <span className="text-xl md:text-2xl text-orange-500 font-black">XP</span>
-              <span className="text-white font-black text-sm md:text-lg tracking-widest">{stats.xp.toLocaleString()}</span>
+          <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-orange-500 px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-[0_0_20px_rgba(249,115,22,0.3)] pointer-events-auto">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-[10px] md:text-2xl text-orange-500 font-black">XP</span>
+              <span className="text-white font-black text-[10px] md:text-lg tracking-widest">{stats.xp.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -224,34 +222,63 @@ const App: React.FC = () => {
       `}</style>
 
       <div className="absolute inset-0 pointer-events-none z-0">
-        {[...Array(150)].map((_, i) => (
-          <div key={i} className="absolute bg-white/20 rounded-full animate-fall" style={{ width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`, left: `${Math.random() * 100}%`, top: `-${Math.random() * 20}%`, animationDuration: `${Math.random() * 5 + 7}s`, animationDelay: `${Math.random() * 10}s` }} />
+        {[...Array(100)].map((_, i) => (
+          <div key={i} className="absolute bg-white/20 rounded-full animate-fall" style={{ width: `${Math.random() * 5 + 1}px`, height: `${Math.random() * 5 + 1}px`, left: `${Math.random() * 100}%`, top: `-${Math.random() * 20}%`, animationDuration: `${Math.random() * 5 + 7}s`, animationDelay: `${Math.random() * 10}s` }} />
         ))}
       </div>
 
-      <div className="relative z-10 w-full flex flex-col items-center">
-        {gameState === GameState.REGISTRATION && <Registration onRegister={handleRegister} />}
+      <div className="relative z-10 w-full h-full flex flex-col items-center">
+        {gameState === GameState.REGISTRATION && (
+          <div className="flex items-center justify-center h-full w-full p-4">
+            <Registration onRegister={handleRegister} />
+          </div>
+        )}
+        
         {gameState === GameState.MENU && (
-          <div className="text-center space-y-8 md:space-y-12 animate-in fade-in zoom-in duration-700 w-full max-w-4xl flex flex-col items-center px-4">
-            <h1 className="text-5xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_15px_30px_rgba(255,0,0,0.5)] leading-tight uppercase">DIE AGAIN 🎄</h1>
-            <div className="flex flex-col items-center gap-6">
-              <PlayerPreview skinId={stats.activeSkinId} />
-              <p className="text-[10px] md:text-xs uppercase tracking-[0.5em] font-black" style={{ color: stats.nameColor === 'rainbow' ? undefined : stats.nameColor, animation: stats.nameColor === 'rainbow' ? 'rainbow-text 2s infinite linear' : 'none' }}>{t('welcomeBack', stats.language)}, {stats.username}</p>
-            </div>
-            <div className="flex flex-col gap-4 w-full max-w-lg">
-              <button onClick={startGame} className="bg-red-700 text-white py-6 px-12 text-2xl md:text-4xl font-black border-4 border-white/30 uppercase pixel-shadow hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-[0_10px_0_#991b1b]">{t('playLevel', stats.language)} {stats.currentLevelId}</button>
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setGameState(GameState.DIE_PASS)} className="bg-orange-600 text-white py-4 text-[10px] md:text-xs font-black border-b-4 border-orange-900 uppercase hover:bg-orange-500 animate-pulse shadow-[0_0_15px_rgba(234,88,12,0.5)]">DIE PASS 🎫</button>
-                <button onClick={() => setGameState(GameState.LUCKY_SPIN)} className="bg-zinc-800/90 text-yellow-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-yellow-900 uppercase hover:bg-zinc-700">{t('spin', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.DAILY_REWARDS)} className="bg-zinc-800/90 text-purple-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-purple-900 uppercase hover:bg-zinc-700">{t('gifts', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.PASS_SHOP)} className="bg-yellow-600 text-black py-4 text-[10px] md:text-xs font-black border-b-4 border-yellow-900 uppercase hover:bg-yellow-500">{t('pass', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.SKIN_SHOP)} className="bg-zinc-800/90 text-indigo-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-indigo-900 uppercase hover:bg-zinc-700">{t('shop', stats.language)}</button>
-                <button onClick={() => setGameState(GameState.SECRET_CODES)} className="bg-zinc-800/90 text-red-500 py-4 text-[10px] md:text-xs font-black border-b-4 border-red-900 uppercase hover:bg-zinc-700">{t('codes', stats.language)}</button>
-                {stats.missionsUnlocked && <button onClick={() => setGameState(GameState.MISSIONS)} className="bg-zinc-100 text-black py-4 text-[10px] md:text-xs font-black border-b-4 border-zinc-400 uppercase hover:bg-white animate-pulse col-span-2">{t('missions', stats.language)} 🎯</button>}
+          <div className="w-full h-full overflow-y-auto pt-16 md:pt-24 pb-12 flex flex-col items-center">
+            <div className="text-center space-y-4 md:space-y-12 animate-in fade-in zoom-in duration-700 w-full max-w-4xl flex flex-col items-center px-4">
+              <h1 className="text-4xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_20px_rgba(255,0,0,0.5)] leading-tight uppercase">DIE AGAIN 🎄</h1>
+              
+              <div className="flex flex-col items-center gap-3 md:gap-6">
+                <div className="scale-75 md:scale-100">
+                  <PlayerPreview skinId={stats.activeSkinId} />
+                </div>
+                <p className="text-[8px] md:text-xs uppercase tracking-[0.3em] font-black" style={{ color: stats.nameColor === 'rainbow' ? undefined : stats.nameColor, animation: stats.nameColor === 'rainbow' ? 'rainbow-text 2s infinite linear' : 'none' }}>
+                  {t('welcomeBack', stats.language)}, {stats.username}
+                </p>
               </div>
-              {!stats.missionsUnlocked && <button onClick={() => setGameState(GameState.FEEDBACK)} className="w-full bg-zinc-800/90 text-cyan-400 py-4 text-[10px] md:text-xs font-black border-b-4 border-cyan-900 uppercase hover:bg-zinc-700">{t('feedback', stats.language)}</button>}
-              <button onClick={() => setGameState(GameState.FIRE_DASH_GROUP)} className="w-full bg-orange-600 text-white py-4 text-xs font-black border-b-4 border-orange-900 uppercase hover:bg-orange-500 transition-all shadow-[0_4px_0_rgba(234,88,12,0.5)]">{t('fireDashGroup', stats.language)} 🔥</button>
-              {stats.adminAbuseActive && <button onClick={() => setAdminPanelOpen(true)} className="bg-green-600 text-black py-6 text-sm font-black border-4 border-black uppercase animate-pulse shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:bg-green-400">TERMINALE ABUSO POTERE ⚡</button>}
+
+              <div className="flex flex-col gap-3 md:gap-4 w-full max-w-sm md:max-w-lg">
+                <button onClick={startGame} className="bg-red-700 text-white py-4 md:py-6 px-4 md:px-12 text-xl md:text-4xl font-black border-2 md:border-4 border-white/30 uppercase pixel-shadow hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-[0_6px_0_#991b1b] md:shadow-[0_10px_0_#991b1b]">
+                  {t('playLevel', stats.language)} {stats.currentLevelId}
+                </button>
+                
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <button onClick={() => setGameState(GameState.DIE_PASS)} className="bg-orange-600 text-white py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-orange-900 uppercase hover:bg-orange-500 animate-pulse shadow-[0_0_10px_rgba(234,88,12,0.4)]">DIE PASS 🎫</button>
+                  <button onClick={() => setGameState(GameState.LUCKY_SPIN)} className="bg-zinc-800/90 text-yellow-400 py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-yellow-900 uppercase hover:bg-zinc-700">{t('spin', stats.language)}</button>
+                  <button onClick={() => setGameState(GameState.DAILY_REWARDS)} className="bg-zinc-800/90 text-purple-400 py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-purple-900 uppercase hover:bg-zinc-700">{t('gifts', stats.language)}</button>
+                  <button onClick={() => setGameState(GameState.PASS_SHOP)} className="bg-yellow-600 text-black py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-yellow-900 uppercase hover:bg-yellow-500">{t('pass', stats.language)}</button>
+                  <button onClick={() => setGameState(GameState.SKIN_SHOP)} className="bg-zinc-800/90 text-indigo-400 py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-indigo-900 uppercase hover:bg-zinc-700">{t('shop', stats.language)}</button>
+                  <button onClick={() => setGameState(GameState.SECRET_CODES)} className="bg-zinc-800/90 text-red-500 py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-red-900 uppercase hover:bg-zinc-700">{t('codes', stats.language)}</button>
+                  {stats.missionsUnlocked && <button onClick={() => setGameState(GameState.MISSIONS)} className="bg-zinc-100 text-black py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-zinc-400 uppercase hover:bg-white animate-pulse col-span-2">{t('missions', stats.language)} 🎯</button>}
+                </div>
+
+                {!stats.missionsUnlocked && (
+                  <button onClick={() => setGameState(GameState.FEEDBACK)} className="w-full bg-zinc-800/90 text-cyan-400 py-3 md:py-4 text-[8px] md:text-xs font-black border-b-2 md:border-b-4 border-cyan-900 uppercase hover:bg-zinc-700">
+                    {t('feedback', stats.language)}
+                  </button>
+                )}
+                
+                <button onClick={() => setGameState(GameState.FIRE_DASH_GROUP)} className="w-full bg-orange-600 text-white py-3 md:py-4 text-[10px] md:text-xs font-black border-b-2 md:border-b-4 border-orange-900 uppercase hover:bg-orange-500 transition-all shadow-[0_4px_0_rgba(234,88,12,0.5)]">
+                  {t('fireDashGroup', stats.language)} 🔥
+                </button>
+                
+                {stats.adminAbuseActive && (
+                  <button onClick={() => setAdminPanelOpen(true)} className="bg-green-600 text-black py-4 md:py-6 text-[10px] md:text-sm font-black border-2 md:border-4 border-black uppercase animate-pulse shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:bg-green-400">
+                    TERMINALE ABUSO ⚡
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
