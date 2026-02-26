@@ -67,14 +67,23 @@ const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onClose, userGems, lang })
 
     ctx.restore();
 
-    ctx.fillStyle = '#ffffff';
+    // Needle (Lancetta dritta in alto)
+    ctx.fillStyle = '#ff0000';
     ctx.beginPath();
-    ctx.moveTo(centerX + radius + 15, centerY);
-    ctx.lineTo(centerX + radius - 10, centerY - 15);
-    ctx.lineTo(centerX + radius - 10, centerY + 15);
+    ctx.moveTo(centerX, centerY - radius - 25);
+    ctx.lineTo(centerX - 15, centerY - radius + 5);
+    ctx.lineTo(centerX + 15, centerY - radius + 5);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Center pin
+    ctx.beginPath();
+    ctx.fillStyle = '#fff';
+    ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+    ctx.fill();
     ctx.stroke();
   };
 
@@ -104,8 +113,15 @@ const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onClose, userGems, lang })
         requestAnimationFrame(animate);
       } else {
         setIsSpinning(false);
+        // Calcolo premio basato sulla posizione in alto (270 gradi)
         const finalDeg = (currentRot % 360 + 360) % 360;
-        const sliceIndex = rewards.length - 1 - Math.floor(finalDeg / (360 / rewards.length));
+        // La ruota gira in senso orario. L'indice 0 è a 0 gradi (destra).
+        // Per avere il premio in alto (270 gradi o -90 gradi), dobbiamo compensare.
+        const sliceAngle = 360 / rewards.length;
+        const offset = 270; 
+        const adjustedDeg = (offset - finalDeg + 360) % 360;
+        const sliceIndex = Math.floor(adjustedDeg / sliceAngle);
+        
         onWin(rewards[sliceIndex] - SPIN_COST);
       }
     };

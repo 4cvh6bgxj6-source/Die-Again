@@ -77,6 +77,9 @@ const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkin
                 
                 <div className="text-center">
                   <div className="text-[10px] md:text-sm font-bold text-white mb-1">{getSkinName(skin.id)}</div>
+                  {skin.id === 'admin_power' && (
+                    <div className="text-[7px] text-red-400 font-bold mb-1 uppercase">Crea, distruggi, vola e finisci mappe</div>
+                  )}
                   {!isUnlocked && (
                     <div className="text-[8px] md:text-[10px] text-yellow-500">
                       {skin.isVipOnly ? 'SOLO VIP' : skin.isCodeOnly ? 'ESCLUSIVA' : `${skin.price} ${t('gems', lang)}`}

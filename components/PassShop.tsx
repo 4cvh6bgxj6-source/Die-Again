@@ -7,22 +7,52 @@ interface PassShopProps {
   userStats: UserStats;
   onBuyPremium: () => void;
   onBuyVip: () => void;
+  onBuyDiePassPlus: () => void;
   onChangeNameColor: (color: string) => void;
   onClose: () => void;
   lang: Language;
 }
 
-const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, onChangeNameColor, onClose, lang }) => {
+const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, onBuyDiePassPlus, onChangeNameColor, onClose, lang }) => {
   const nameColors = ['#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
 
   return (
     <div className="fixed inset-0 bg-black/95 flex items-start justify-center z-50 p-4 overflow-y-auto py-10">
-      <div className="bg-zinc-900 border-4 border-yellow-500 p-6 md:p-8 rounded-lg w-full max-w-4xl my-auto pixel-shadow relative">
+      <div className="bg-zinc-900 border-4 border-yellow-500 p-6 md:p-8 rounded-lg w-full max-w-5xl my-auto pixel-shadow relative">
         <h2 className="text-3xl md:text-5xl text-yellow-500 text-center uppercase tracking-tighter font-black mb-10 italic">
           {t('passShop', lang)}
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* CARD DIE PASS+ */}
+          <div className={`p-6 border-4 rounded-xl flex flex-col gap-4 relative overflow-hidden ${userStats.isDiePassPlus ? 'border-orange-500 bg-orange-950/20' : 'border-zinc-700 bg-zinc-800'}`}>
+            <h3 className="text-2xl font-black text-orange-500 uppercase italic">DIE PASS+ 🎫</h3>
+            <div className="text-[10px] md:text-xs text-zinc-300 leading-relaxed">
+              <p className="font-bold text-orange-400 mb-2">VANTAGGI ELITE:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Sblocca tutte le ricompense Plus</li>
+                <li className="text-yellow-400 font-black">+230.000 GEMME EXTRA</li>
+                <li>5 Skin Esclusive (Cyber, Void, etc)</li>
+                <li className="text-red-500 font-black">PREMIO FINALE: ADMIN POWER</li>
+                <li className="text-[8px] italic text-zinc-500 mt-2">L'Admin Power può creare altre mappe, distruggerle, volare, togliere trappole e finire i livelli istantaneamente!</li>
+              </ul>
+            </div>
+            
+            {!userStats.isDiePassPlus ? (
+              <button 
+                onClick={onBuyDiePassPlus}
+                disabled={userStats.gems < 12500}
+                className="mt-auto bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 text-white py-4 font-bold uppercase text-xs border-b-4 border-orange-900 active:scale-95 transition-all"
+              >
+                ACQUISTA (12.500 💎)
+              </button>
+            ) : (
+              <div className="mt-auto text-center py-4 bg-orange-900/40 text-orange-300 font-bold uppercase text-xs border-2 border-orange-500 rounded">
+                {t('owned', lang)}
+              </div>
+            )}
+          </div>
+
           {/* CARD PREMIUM */}
           <div className={`p-6 border-4 rounded-xl flex flex-col gap-4 relative overflow-hidden ${userStats.membership !== 'none' ? 'border-purple-500 bg-purple-950/20' : 'border-zinc-700 bg-zinc-800'}`}>
             <h3 className="text-2xl font-black text-purple-400 uppercase italic">PREMIUM</h3>
@@ -34,12 +64,12 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
               <button 
                 onClick={onBuyPremium}
                 disabled={userStats.gems < 5000}
-                className="mt-4 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 text-white py-4 font-bold uppercase text-xs border-b-4 border-purple-900 active:scale-95 transition-all"
+                className="mt-auto bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 text-white py-4 font-bold uppercase text-xs border-b-4 border-purple-900 active:scale-95 transition-all"
               >
                 {t('buyPremium', lang)}
               </button>
             ) : (
-              <div className="mt-4 text-center py-4 bg-purple-900/40 text-purple-300 font-bold uppercase text-xs border-2 border-purple-500 rounded">
+              <div className="mt-auto text-center py-4 bg-purple-900/40 text-purple-300 font-bold uppercase text-xs border-2 border-purple-500 rounded">
                 {t('owned', lang)}
               </div>
             )}
@@ -56,12 +86,12 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
               <button 
                 onClick={onBuyVip}
                 disabled={userStats.gems < 20000}
-                className="mt-4 bg-gradient-to-r from-red-600 via-green-600 to-blue-600 hover:brightness-110 disabled:grayscale text-white py-4 font-bold uppercase text-xs border-b-4 border-white/50 active:scale-95 transition-all"
+                className="mt-auto bg-gradient-to-r from-red-600 via-green-600 to-blue-600 hover:brightness-110 disabled:grayscale text-white py-4 font-bold uppercase text-xs border-b-4 border-white/50 active:scale-95 transition-all"
               >
                 {t('buyVip', lang)}
               </button>
             ) : (
-              <div className="mt-4 text-center py-4 bg-white/10 text-white font-bold uppercase text-xs border-2 border-white rounded" style={{ animation: 'rainbow-text 2s infinite linear' }}>
+              <div className="mt-auto text-center py-4 bg-white/10 text-white font-bold uppercase text-xs border-2 border-white rounded" style={{ animation: 'rainbow-text 2s infinite linear' }}>
                 ULTIMATE VIP
               </div>
             )}

@@ -53,9 +53,6 @@ const App: React.FC = () => {
   const [lastDeathMessage, setLastDeathMessage] = useState<string>("");
   const [levelAdvice, setLevelAdvice] = useState<string>("");
   const [globalBroadcast, setGlobalBroadcast] = useState<string>("");
-  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
-  const [adminMsgInput, setAdminMsgInput] = useState("");
-  const [adminGemInput, setAdminGemInput] = useState<number>(100);
   const [activeGemRain, setActiveGemRain] = useState<number>(0);
 
   useEffect(() => {
@@ -174,12 +171,6 @@ const App: React.FC = () => {
     });
   };
 
-  const triggerAdminAbuse = () => {
-    if (adminMsgInput.trim()) { setGlobalBroadcast(adminMsgInput); setTimeout(() => setGlobalBroadcast(""), 20000); }
-    if (adminGemInput > 0) { setActiveGemRain(adminGemInput); if (!adminMsgInput.trim()) { setGlobalBroadcast(`L'ADMIN ${stats.username.toUpperCase()} HA RILASCIATO ${adminGemInput.toLocaleString()} GEMME!`); setTimeout(() => setGlobalBroadcast(""), 12000); } }
-    setAdminPanelOpen(false); setAdminMsgInput("");
-  };
-
   const handleJackpot = () => { setStats(prev => ({ ...prev, gems: prev.gems + 20000 })); setGlobalBroadcast("🚨 SYSTEM: JACKPOT 20.000 GEMME PRESO! 🚨"); setTimeout(() => setGlobalBroadcast(""), 6000); };
   const isDailyClaimed = stats.lastDailyClaim === new Date().toDateString();
 
@@ -216,15 +207,35 @@ const App: React.FC = () => {
       <style>{`
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .animate-marquee { animation: marquee 15s linear infinite; display: inline-flex; width: 200%; }
-        @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); } 100% { transform: translateY(110vh) rotate(360deg); } }
-        .animate-fall { animation: fall linear infinite; }
+        @keyframes burn { 
+          0% { transform: translateY(110vh) rotate(0deg) scale(1); opacity: 0.8; } 
+          100% { transform: translateY(-20vh) rotate(360deg) scale(0); opacity: 0; } 
+        }
+        .animate-burn { animation: burn linear infinite; }
         @keyframes rainbow-text { 0% { color: #ff0000; } 20% { color: #ffff00; } 40% { color: #00ff00; } 60% { color: #00ffff; } 80% { color: #0000ff; } 100% { color: #ff00ff; } }
       `}</style>
 
       <div className="absolute inset-0 pointer-events-none z-0">
-        {[...Array(100)].map((_, i) => (
-          <div key={i} className="absolute bg-white/20 rounded-full animate-fall" style={{ width: `${Math.random() * 5 + 1}px`, height: `${Math.random() * 5 + 1}px`, left: `${Math.random() * 100}%`, top: `-${Math.random() * 20}%`, animationDuration: `${Math.random() * 5 + 7}s`, animationDelay: `${Math.random() * 10}s` }} />
-        ))}
+        {[...Array(120)].map((_, i) => {
+          const size = Math.random() * 8 + 4;
+          const colors = ['#ef4444', '#f97316', '#eab308', '#dc2626']; // Rosso, Arancio, Giallo, Rosso Scuro
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          return (
+            <div 
+              key={i} 
+              className="absolute animate-burn" 
+              style={{ 
+                width: `${size}px`, 
+                height: `${size}px`, 
+                backgroundColor: color,
+                left: `${Math.random() * 100}%`, 
+                animationDuration: `${Math.random() * 3 + 2}s`, 
+                animationDelay: `${Math.random() * 5}s`,
+                boxShadow: `0 0 ${size}px ${color}`
+              }} 
+            />
+          );
+        })}
       </div>
 
       <div className="relative z-10 w-full h-full flex flex-col items-center">
@@ -237,7 +248,7 @@ const App: React.FC = () => {
         {gameState === GameState.MENU && (
           <div className="w-full h-full overflow-y-auto pt-16 md:pt-24 pb-12 flex flex-col items-center">
             <div className="text-center space-y-4 md:space-y-12 animate-in fade-in zoom-in duration-700 w-full max-w-4xl flex flex-col items-center px-4">
-              <h1 className="text-4xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_20px_rgba(255,0,0,0.5)] leading-tight uppercase">DIE AGAIN 🎄</h1>
+              <h1 className="text-4xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_20px_rgba(255,0,0,0.5)] leading-tight uppercase">DIE AGAIN 🔥</h1>
               
               <div className="flex flex-col items-center gap-3 md:gap-6">
                 <div className="scale-75 md:scale-100">
@@ -272,31 +283,11 @@ const App: React.FC = () => {
                 <button onClick={() => setGameState(GameState.FIRE_DASH_GROUP)} className="w-full bg-orange-600 text-white py-3 md:py-4 text-[10px] md:text-xs font-black border-b-2 md:border-b-4 border-orange-900 uppercase hover:bg-orange-500 transition-all shadow-[0_4px_0_rgba(234,88,12,0.5)]">
                   {t('fireDashGroup', stats.language)} 🔥
                 </button>
-                
-                {stats.adminAbuseActive && (
-                  <button onClick={() => setAdminPanelOpen(true)} className="bg-green-600 text-black py-4 md:py-6 text-[10px] md:text-sm font-black border-2 md:border-4 border-black uppercase animate-pulse shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:bg-green-400">
-                    TERMINALE ABUSO ⚡
-                  </button>
-                )}
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {adminPanelOpen && (
-        <div className="fixed inset-0 bg-black/98 z-[400] flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="bg-black border-4 border-green-500 p-6 md:p-10 w-full max-w-xl font-mono text-green-400 shadow-[0_0_80px_rgba(34,197,94,0.4)]">
-            <h2 className="text-2xl md:text-3xl font-black mb-10 text-center underline tracking-widest text-green-500 uppercase italic">CONSOLE ABUSO</h2>
-            <div className="space-y-8">
-              <div className="bg-zinc-950 p-4 border border-green-900/50"><label className="block text-[8px] md:text-[10px] mb-3 font-bold uppercase text-green-300">📢 BROADCAST:</label><input value={adminMsgInput} onChange={(e) => setAdminMsgInput(e.target.value)} className="w-full bg-black border border-green-900 p-4 text-xs md:text-sm focus:outline-none focus:border-green-400 text-green-400" placeholder="Messaggio globale..." /></div>
-              <div className="bg-zinc-950 p-4 border border-yellow-900/50"><label className="block text-[8px] md:text-[10px] mb-3 font-bold uppercase text-yellow-500">💎 GEM RAIN:</label><input type="number" value={adminGemInput} onChange={(e) => setAdminGemInput(parseInt(e.target.value) || 0)} className="w-full bg-black border border-yellow-900 p-4 text-lg text-yellow-500 font-black" placeholder="Quantità..." /></div>
-              <button onClick={triggerAdminAbuse} className="w-full bg-green-600 text-black py-6 font-black text-lg uppercase border-b-8 border-green-900 hover:bg-green-400 transition-all">ESEGUI ABUSO POTERE</button>
-              <button onClick={() => setAdminPanelOpen(false)} className="w-full text-center text-zinc-700 hover:text-white text-[10px] font-bold uppercase mt-6">CHIUDI TERMINALE</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {gameState === GameState.PLAYING && (
         <div className="relative w-full h-full max-w-7xl flex flex-col items-center justify-center gap-4 z-20">
@@ -308,7 +299,7 @@ const App: React.FC = () => {
       {gameState === GameState.GAMEOVER && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[500] p-4">
           <div className="text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 w-full max-w-md bg-zinc-950 p-6 md:p-10 border-8 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]">
-            <h2 className="text-4xl md:text-6xl font-black text-red-600 italic animate-pulse mb-6 uppercase">SCLERATO! ❄️</h2>
+            <h2 className="text-4xl md:text-6xl font-black text-red-600 italic animate-pulse mb-6 uppercase">SCLERATO! 💀</h2>
             <div className="mb-6 scale-110"><PlayerPreview skinId={stats.activeSkinId} /></div>
             <div className="bg-red-950/40 border-l-4 border-red-600 p-4 mb-8 w-full"><p className="text-red-400 text-xs italic uppercase font-bold">"{lastDeathMessage}"</p></div>
             <div className="flex flex-col gap-4 w-full"><button onClick={startGame} className="bg-red-600 text-white py-5 text-xl font-black border-b-8 border-red-900 uppercase">RIPROVA</button><button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button></div>
@@ -331,7 +322,7 @@ const App: React.FC = () => {
       {gameState === GameState.SECRET_CODES && <SecretCodes lang={stats.language} onRedeem={handleRedeemCode} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.DAILY_REWARDS && <DailyRewards lang={stats.language} streak={stats.dailyStreak} alreadyClaimed={isDailyClaimed} onClaim={(a) => { setStats(prev => ({ ...prev, gems: prev.gems + a, lastDailyClaim: new Date().toDateString(), dailyStreak: (prev.dailyStreak + 1) % 8 })); setGameState(GameState.MENU); }} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.SKIN_SHOP && <SkinShop lang={stats.language} userGems={stats.gems} unlockedSkins={stats.unlockedSkins} activeSkinId={stats.activeSkinId} membership={stats.membership} onBuy={(s) => setStats(p => ({...p, gems: p.gems - s.price, unlockedSkins: [...p.unlockedSkins, s.id], activeSkinId: s.id}))} onEquip={(id) => setStats(p => ({...p, activeSkinId: id}))} onClose={() => setGameState(GameState.MENU)} />}
-      {gameState === GameState.PASS_SHOP && <PassShop lang={stats.language} userStats={stats} onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} onBuyVip={() => { if(stats.gems >= 20000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.PASS_SHOP && <PassShop lang={stats.language} userStats={stats} onBuyDiePassPlus={handleBuyDiePassPlus} onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} onBuyVip={() => { if(stats.gems >= 20000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.FEEDBACK && <Feedback lang={stats.language} username={stats.username} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.FIRE_DASH_GROUP && <FireDashGroup lang={stats.language} onGoToIdea={() => setGameState(GameState.GAME_IDEA)} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.GAME_IDEA && <GameIdea username={stats.username} lang={stats.language} onBack={() => setGameState(GameState.FIRE_DASH_GROUP)} onClose={() => setGameState(GameState.MENU)} />}

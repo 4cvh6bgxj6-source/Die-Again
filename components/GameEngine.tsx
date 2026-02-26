@@ -17,17 +17,18 @@ interface GameEngineProps {
   onJackpot?: () => void;
 }
 
-interface Snowflake {
+interface FireParticle {
   x: number;
   y: number;
   size: number;
   speed: number;
-  drift: number;
+  color: string;
+  life: number;
 }
 
 const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, onWin, gameState, activeSkinId, lang, userStats, releaseGems, gemCount = 0, onJackpot }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const snowflakes = useRef<Snowflake[]>([]);
+  const particles = useRef<FireParticle[]>([]);
   const activeSkin = SKINS.find(s => s.id === activeSkinId) || SKINS[0];
   const isVip = userStats.membership === 'vip';
   const isUltimateAdmin = activeSkinId === 'admin_power';
@@ -58,7 +59,6 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
   const collectedGemsCount = useRef(0);
   const totalGemsReleased = useRef(0);
 
-  // Rilevazione dispositivo touch
   useEffect(() => {
     const checkTouch = () => {
       setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -157,10 +157,22 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
   const update = useCallback(() => {
     if (gameState !== GameState.PLAYING || isDeadRef.current) return;
 
-    snowflakes.current.forEach(f => {
-      f.y += f.speed;
-      f.x += f.drift;
-      if (f.y > CANVAS_HEIGHT) { f.y = -10; f.x = Math.random() * CANVAS_WIDTH; }
+    // Update Fire Particles
+    particles.current.forEach(p => {
+      p.y -= p.speed;
+      p.x += (Math.random() - 0.5) * 2; // Tremolio orizzontale
+      p.life -= 0.01;
+      
+      if (p.y < 0 || p.life <= 0) {
+        p.y = CANVAS_HEIGHT + 10;
+        p.x = Math.random() * CANVAS_WIDTH;
+        p.life = 1;
+        p.speed = Math.random() * 3 + 1;
+        
+        // Randomize fire color on reset
+        const colors = ['#ef4444', '#f97316', '#eab308', '#dc2626'];
+        p.color = colors[Math.floor(Math.random() * colors.length)];
+      }
     });
 
     setPlayer(prev => {
@@ -253,12 +265,22 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     const handleKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     window.addEventListener('keydown', handleKeyDown); window.addEventListener('keyup', handleKeyUp);
     requestRef.current = requestAnimationFrame(update);
-    // Init snow
-    const snow: Snowflake[] = [];
-    for (let i = 0; i < 600; i++) {
-      snow.push({ x: Math.random() * CANVAS_WIDTH, y: Math.random() * CANVAS_HEIGHT, size: Math.random() * 3 + 1, speed: Math.random() * 2 + 0.5, drift: Math.random() * 0.6 - 0.3 });
+    
+    // Init fire particles
+    const initParticles: FireParticle[] = [];
+    const colors = ['#ef4444', '#f97316', '#eab308', '#dc2626'];
+    for (let i = 0; i < 200; i++) {
+      initParticles.push({ 
+        x: Math.random() * CANVAS_WIDTH, 
+        y: Math.random() * CANVAS_HEIGHT + CANVAS_HEIGHT/2, // Start mostly near bottom
+        size: Math.random() * 4 + 2, 
+        speed: Math.random() * 3 + 1,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: Math.random()
+      });
     }
-    snowflakes.current = snow;
+    particles.current = initParticles;
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -271,10 +293,17 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     const render = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-      grad.addColorStop(0, '#050b18'); grad.addColorStop(1, '#112244');
+      grad.addColorStop(0, '#050b18'); grad.addColorStop(1, '#1e102e'); // Slightly more reddish dark background
       ctx.fillStyle = grad; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      snowflakes.current.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill(); });
+      
+      // Render Fire Particles
+      particles.current.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.fillRect(p.x, p.y, p.size, p.size); // Draw squares (pixels)
+      });
+      ctx.globalAlpha = 1.0;
+
       objectsStateRef.current.forEach((obj) => {
         if (!obj.active) return;
         const renderY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
