@@ -15,7 +15,8 @@ export enum GameState {
   WIN,
   FIRE_DASH_GROUP,
   GAME_IDEA,
-  EDIT_PROFILE
+  EDIT_PROFILE,
+  MAP_SELECTION
 }
 
 export type Language = 'it' | 'en';
@@ -41,6 +42,7 @@ export interface LevelData {
   playerStart: Vector2D;
   difficulty: 'Hard' | 'Extreme' | 'Impossible';
   hint: string;
+  worldId?: number;
 }
 
 export interface Skin {

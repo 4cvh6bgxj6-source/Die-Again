@@ -16,6 +16,7 @@ import FireDashGroup from './components/FireDashGroup';
 import GameIdea from './components/GameIdea';
 import Missions from './components/Missions';
 import DiePass from './components/DiePass';
+import { MapSelection } from './components/MapSelection';
 import { getLevelAdvice, getRageMessage } from './services/gemini';
 import { t } from './i18n';
 
@@ -97,10 +98,16 @@ const App: React.FC = () => {
     fetch(REGISTRATION_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds: [{ title: "🚀 Nuova Registrazione", color: 0x00ff00, fields: [{ name: "Username", value: name, inline: true }], timestamp: new Date().toISOString() }] }) }).catch(() => {});
   };
 
-  const startGame = () => {
+  const startGame = (levelId?: number | React.MouseEvent) => {
+    let lvlToPlay = currentLevel;
+    if (typeof levelId === 'number') {
+      const found = LEVELS.find(l => l.id === levelId) || generateProceduralLevel(levelId);
+      setCurrentLevel(found);
+      lvlToPlay = found;
+    }
     setGameState(GameState.PLAYING);
     setLastDeathMessage("");
-    updateLevelAdvice(currentLevel.name);
+    updateLevelAdvice(lvlToPlay.name);
   };
 
   const updateLevelAdvice = async (name: string) => {
@@ -122,8 +129,10 @@ const App: React.FC = () => {
     setGameState(GameState.WIN);
     setActiveGemRain(0);
     setStats(prev => {
-      let nextId = prev.currentLevelId + 1;
-      if (prev.currentLevelId === 1) nextId = 3; // Skip level 2
+      let nextId = prev.currentLevelId;
+      if (currentLevel.id >= prev.currentLevelId && currentLevel.id < 350) {
+        nextId = currentLevel.id + 1;
+      }
       const newMissions = prev.missions.map(m => m.id === 'm2' ? { ...m, current: m.current + 1 } : m);
       return { ...prev, currentLevelId: nextId, gems: prev.gems + 150, missions: newMissions, xp: prev.xp + 100 };
     });
@@ -338,8 +347,8 @@ const App: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-3 md:gap-4 w-full max-w-sm md:max-w-lg">
-                <button onClick={startGame} className="bg-red-700 text-white py-4 md:py-6 px-4 md:px-12 text-xl md:text-4xl font-black border-2 md:border-4 border-white/30 uppercase pixel-shadow hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-[0_6px_0_#991b1b] md:shadow-[0_10px_0_#991b1b]">
-                  {t('playLevel', stats.language)} {stats.currentLevelId}
+                <button onClick={() => setGameState(GameState.MAP_SELECTION)} className="bg-red-700 text-white py-4 md:py-6 px-4 md:px-12 text-xl md:text-4xl font-black border-2 md:border-4 border-white/30 uppercase pixel-shadow hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-[0_6px_0_#991b1b] md:shadow-[0_10px_0_#991b1b]">
+                  Mappe & Livelli
                 </button>
                 
                 <div className="grid grid-cols-2 gap-2 md:gap-3">
@@ -405,9 +414,18 @@ const App: React.FC = () => {
           <div className="text-center flex flex-col items-center animate-in zoom-in bg-zinc-900 p-6 md:p-10 border-8 border-green-500 w-full max-w-md shadow-[0_0_50px_rgba(34,197,94,0.5)]">
             <h2 className="text-4xl md:text-6xl font-black text-green-500 animate-bounce mb-6 uppercase tracking-tighter">GRANDE! 🎁</h2>
             <div className="text-2xl text-yellow-400 font-black mb-10 tracking-widest">+150 💎 | +100 XP</div>
-            <div className="flex flex-col gap-4 w-full"><button onClick={() => { const nextId = stats.currentLevelId; setCurrentLevel(LEVELS.find(l => l.id === nextId) || generateProceduralLevel(nextId)); setGameState(GameState.PLAYING); }} className="bg-green-600 text-white py-5 px-8 font-black w-full uppercase border-b-8 border-green-900 text-xl">LIVELLO {stats.currentLevelId} →</button><button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button></div>
+            <div className="flex flex-col gap-4 w-full"><button onClick={() => setGameState(GameState.MAP_SELECTION)} className="bg-green-600 text-white py-5 px-8 font-black w-full uppercase border-b-8 border-green-900 text-xl">SELEZIONA MAPPA →</button><button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button></div>
           </div>
         </div>
+      )}
+
+      {gameState === GameState.MAP_SELECTION && (
+        <MapSelection 
+          currentLevelId={stats.currentLevelId} 
+          onSelectLevel={(id) => startGame(id)} 
+          onBack={() => setGameState(GameState.MENU)} 
+          language={stats.language} 
+        />
       )}
 
       {gameState === GameState.DIE_PASS && <DiePass stats={stats} onClaim={handleClaimPassReward} onBuyPlus={handleBuyDiePassPlus} onClose={() => setGameState(GameState.MENU)} lang={stats.language} />}

@@ -12,6 +12,33 @@ export const NAME_COLORS = ['#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00
 
 const NEON_PURPLE = '#6d28d9'; 
 
+export interface WorldDef {
+  id: number;
+  name: string;
+  theme: string;
+  desc: string;
+  bgStart: string;
+  bgEnd: string;
+  wallColor: string;
+  trapColor: string;
+}
+
+export const WORLDS: WorldDef[] = [
+  { id: 1, name: "Neon City", theme: "cyber", desc: "La città neon dove tutto è iniziato.", bgStart: "#050b18", bgEnd: "#1e102e", wallColor: "#6d28d9", trapColor: "#ff0000" },
+  { id: 2, name: "Foresta Tossica", theme: "toxic", desc: "Verde, acido e mortale.", bgStart: "#0a1a0f", bgEnd: "#113318", wallColor: "#22c55e", trapColor: "#eab308" },
+  { id: 3, name: "Deserto Infernale", theme: "desert", desc: "Un caldo infernale tra dune mortali.", bgStart: "#2a0a00", bgEnd: "#1a0500", wallColor: "#ea580c", trapColor: "#dc2626" },
+  { id: 4, name: "Ghiacciaio Spezzato", theme: "ice", desc: "Il freddo ti congelerà i riflessi.", bgStart: "#051525", bgEnd: "#00051a", wallColor: "#38bdf8", trapColor: "#818cf8" },
+  { id: 5, name: "Cimitero dei Gamer", theme: "spooky", desc: "Qui riposano coloro che hanno quittato.", bgStart: "#1a0a25", bgEnd: "#05000a", wallColor: "#7e22ce", trapColor: "#14b8a6" },
+  { id: 6, name: "Abisso Ruggente", theme: "abyss", desc: "Oceani scuri carichi di elettricità.", bgStart: "#001020", bgEnd: "#00000a", wallColor: "#0284c7", trapColor: "#facc15" },
+  { id: 7, name: "Vuoto Assoluto", theme: "void", desc: "La fine dello spazio e del tempo.", bgStart: "#000000", bgEnd: "#200000", wallColor: "#475569", trapColor: "#f43f5e" }
+];
+
+export const getWorldForLevel = (levelId: number): WorldDef => {
+  if (levelId > 350) return WORLDS[6];
+  const worldIndex = Math.floor((levelId - 1) / 50);
+  return WORLDS[Math.max(0, Math.min(6, worldIndex))];
+};
+
 const generateSkins = (): Skin[] => {
   const baseSkins: Skin[] = [
     { id: 'classic', name: 'CLASSICO', color: '#00ffff', price: 0 },
@@ -131,7 +158,8 @@ const createLevel = (id: number, name: string, difficulty: any, objects: GameObj
   difficulty,
   hint: "Usa i tuoi poteri se puoi.",
   playerStart: { x: 50, y: 600 },
-  objects
+  objects,
+  worldId: 1
 });
 
 export const LEVELS: LevelData[] = [
@@ -197,13 +225,15 @@ export const LEVELS: LevelData[] = [
 ];
 
 export function generateProceduralLevel(levelId: number): LevelData {
+  const world = getWorldForLevel(levelId);
+
   const objects: GameObject[] = [
-    { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    { pos: { x: 900, y: 650 }, size: { x: 100, y: 50 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: world.wallColor, type: 'wall' },
+    { pos: { x: 900, y: 650 }, size: { x: 100, y: 50 }, color: world.wallColor, type: 'wall' },
     { pos: { x: 950, y: 600 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ];
 
-  const trapMultiplier = Math.floor(levelId / 4); // Even slower scaling
+  const trapMultiplier = Math.floor(levelId / 4); // Increment difficulty
   const numPieces = 6 + trapMultiplier;
   let currentX = 150;
   let currentY = 650;
@@ -220,16 +250,16 @@ export function generateProceduralLevel(levelId: number): LevelData {
 
     let pieceType: 'wall' | 'opening_floor' = 'wall';
     let isLethal = false;
-    let color = NEON_PURPLE;
+    let color = world.wallColor;
 
     if (typeRoll < 0.65) {
       pieceType = 'wall';
-    } else if (typeRoll < 0.7) { // Even fewer opening floor traps (now 5% chance)
+    } else if (typeRoll < 0.7) { 
       pieceType = 'opening_floor';
-    } else if (typeRoll < 0.85) { // Reduced isLethal wall chance slightly
+    } else if (typeRoll < 0.85) { 
       pieceType = 'wall';
       isLethal = true;
-      color = '#ff4500';
+      color = world.trapColor;
     } else {
       pieceType = 'wall';
     }
@@ -245,24 +275,24 @@ export function generateProceduralLevel(levelId: number): LevelData {
     lastType = isLethal ? 'hidden_trap' : pieceType;
 
     const airTrapRoll = Math.random();
-    if (airTrapRoll > 0.5) { // Increased air traps
+    if (airTrapRoll > 0.5) { 
        if (airTrapRoll > 0.8) {
-         objects.push({ pos: { x: currentX + 10, y: currentY - 500 }, size: { x: 30, y: 50 }, color: NEON_PURPLE, type: 'falling_spike' });
+         objects.push({ pos: { x: currentX + 10, y: currentY - 500 }, size: { x: 30, y: 50 }, color: world.trapColor, type: 'falling_spike' });
        } else {
          objects.push({ 
            pos: { x: currentX + 20, y: currentY - 450 }, 
            size: { x: 60, y: 120 }, 
-           color: '#ff0000', 
+           color: world.trapColor, 
            type: 'moving_wall', 
            isLethal: true 
          });
        }
     }
 
-    if (Math.random() > 0.6 && !isLethal && pieceType === 'wall') { // More floor traps
-      objects.push({ pos: { x: currentX + width / 4, y: currentY - 20 }, size: { x: 30, y: 20 }, color: '#ff0000', type: 'trap' });
+    if (Math.random() > 0.6 && !isLethal && pieceType === 'wall') { 
+      objects.push({ pos: { x: currentX + width / 4, y: currentY - 20 }, size: { x: 30, y: 20 }, color: world.trapColor, type: 'trap' });
       if (width > 120) {
-        objects.push({ pos: { x: currentX + (width * 3) / 4, y: currentY - 20 }, size: { x: 30, y: 20 }, color: '#ff0000', type: 'trap' });
+        objects.push({ pos: { x: currentX + (width * 3) / 4, y: currentY - 20 }, size: { x: 30, y: 20 }, color: world.trapColor, type: 'trap' });
       }
     }
 
@@ -272,10 +302,11 @@ export function generateProceduralLevel(levelId: number): LevelData {
 
   return {
     id: levelId,
-    name: `Caos Procedurale ${levelId}`,
-    difficulty: levelId > 25 ? "Impossible" : "Extreme",
-    hint: "L'ADMIN POWER non teme il caos.",
+    name: `${world.name} - Livello ${levelId - ((world.id - 1) * 50)}`,
+    difficulty: levelId > 100 ? "Impossible" : levelId > 50 ? "Extreme" : "Hard",
+    hint: world.desc,
     playerStart: { x: 50, y: 600 },
-    objects
+    objects,
+    worldId: world.id
   };
 }

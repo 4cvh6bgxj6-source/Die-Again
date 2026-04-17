@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { GameState, LevelData, GameObject, Vector2D, Language, UserStats } from '../types';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, PLAYER_SIZE, GRAVITY, JUMP_FORCE, MOVE_SPEED, SKINS, generateProceduralLevel } from '../constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, PLAYER_SIZE, GRAVITY, JUMP_FORCE, MOVE_SPEED, SKINS, generateProceduralLevel, getWorldForLevel } from '../constants';
 import { t } from '../i18n';
 
 interface GameEngineProps {
@@ -339,8 +339,11 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     const ctx = canvas.getContext('2d'); if (!ctx) return;
     const render = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      const worldTheme = getWorldForLevel(level.id);
+      
       const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-      grad.addColorStop(0, '#050b18'); grad.addColorStop(1, '#1e102e'); // Slightly more reddish dark background
+      grad.addColorStop(0, worldTheme.bgStart); grad.addColorStop(1, worldTheme.bgEnd);
       ctx.fillStyle = grad; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       
       // Render Fire Particles
