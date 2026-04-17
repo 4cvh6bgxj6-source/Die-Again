@@ -3,44 +3,29 @@ import React from 'react';
 import { Skin, Language } from '../types';
 import { SKINS } from '../constants';
 import { t } from '../i18n';
+import PlayerPreview from './PlayerPreview';
 
 interface SkinShopProps {
   userGems: number;
   unlockedSkins: string[];
   activeSkinId: string;
-  membership: string;
-  onBuy: (skin: Skin) => void;
-  onEquip: (skinId: string) => void;
+  onBuySkin: (skin: Skin) => void;
+  onEquipSkin: (skinId: string) => void;
   onClose: () => void;
   lang: Language;
 }
 
-const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkinId, membership, onBuy, onEquip, onClose, lang }) => {
-  const getSkinName = (skinId: string) => {
-    switch (skinId) {
-      case 'classic': return t('skinClassic', lang);
-      case 'gold': return t('skinGold', lang);
-      case 'ruby': return t('skinRuby', lang);
-      case 'emerald': return t('skinEmerald', lang);
-      case 'ghost': return t('skinGhost', lang);
-      case 'neon': return 'NEON X';
-      case 'inferno': return 'INFERNO';
-      case 'admin': return 'ADMIN';
-      case 'admin_power': return 'ADMIN POWER';
-      case 'cyber_ninja': return 'CYBER NINJA';
-      case 'void_walker': return 'VOID WALKER';
-      case 'glitch_master': return 'GLITCH MASTER';
-      case 'dragon_lord': return 'DRAGON LORD';
-      case 'galaxy_god': return 'GALAXY GOD';
-      default: return skinId.toUpperCase();
-    }
+const SkinShop: React.FC<SkinShopProps> = ({ 
+  userGems, unlockedSkins, activeSkinId, onBuySkin, onEquipSkin, onClose, lang 
+}) => {
+  const getSkinName = (skin: Skin) => {
+    if (skin.id === 'classic') return t('skinClassic', lang);
+    return skin.name;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 flex items-start justify-center z-[600] p-4 overflow-y-auto py-10">
-      <div className="bg-zinc-900 border-4 border-indigo-500 p-6 md:p-8 rounded-lg w-full max-w-3xl my-auto pixel-shadow relative">
-        
-        {/* Pulsante di chiusura X in alto a destra */}
+    <div className="fixed inset-0 bg-black/95 flex items-start justify-center z-[600] p-2 md:p-4 overflow-y-auto py-10">
+      <div className="bg-zinc-900 border-4 border-indigo-500 p-4 md:p-8 rounded-lg w-full max-w-5xl my-auto pixel-shadow relative">
         <button 
           onClick={onClose}
           className="absolute -top-4 -right-4 bg-red-600 text-white w-10 h-10 flex items-center justify-center border-4 border-white font-black hover:bg-red-500 active:scale-90 transition-all z-10"
@@ -48,84 +33,81 @@ const SkinShop: React.FC<SkinShopProps> = ({ userGems, unlockedSkins, activeSkin
           X
         </button>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-          <h2 className="text-2xl md:text-3xl text-indigo-400 uppercase tracking-tighter font-black">{t('skinShop', lang)}</h2>
-          <div className="bg-indigo-950 px-4 py-2 border-2 border-indigo-400 rounded">
-            <span className="text-yellow-400 font-bold text-xs md:text-sm">{userGems.toLocaleString()} {t('gems', lang)}</span>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-white font-black text-2xl uppercase tracking-widest">NEGOZIO SKIN</h2>
+          <div className="bg-indigo-950 px-4 py-2 border-2 border-indigo-400 rounded flex items-center gap-2">
+            <span className="text-yellow-400 font-black text-xs md:text-sm">💎 {userGems.toLocaleString()} {t('gems', lang)}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-          {SKINS.map((skin) => {
-            const isUnlocked = unlockedSkins.includes(skin.id);
-            const isActive = activeSkinId === skin.id;
+        <div className="max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
+            {SKINS.map((skin) => {
+              const isUnlocked = unlockedSkins.includes(skin.id);
+              const isActive = activeSkinId === skin.id;
 
-            return (
-              <div 
-                key={skin.id}
-                className={`p-4 border-4 rounded-lg flex flex-col items-center gap-4 transition-all ${
-                  isActive ? 'border-cyan-400 bg-cyan-950/20' : 'border-zinc-700 bg-zinc-800'
-                }`}
-              >
+              return (
                 <div 
-                  className="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-white shadow-lg"
-                  style={{ 
-                    backgroundColor: skin.color, 
-                    boxShadow: `0 0 15px ${skin.color}`
-                  }}
-                />
-                
-                <div className="text-center">
-                  <div className="text-[10px] md:text-sm font-bold text-white mb-1">{getSkinName(skin.id)}</div>
-                  {skin.id === 'admin_power' && (
-                    <div className="text-[7px] text-red-400 font-bold mb-1 uppercase">Crea, distruggi, vola e finisci mappe</div>
-                  )}
-                  {!isUnlocked && (
-                    <div className="text-[8px] md:text-[10px] text-yellow-500">
-                      {skin.isVipOnly ? 'SOLO VIP' : skin.isCodeOnly ? 'ESCLUSIVA' : `${skin.price} ${t('gems', lang)}`}
+                  key={skin.id}
+                  className={`p-3 md:p-4 border-4 rounded-lg flex flex-col items-center gap-2 md:gap-4 transition-all ${
+                    isActive ? 'border-cyan-400 bg-cyan-950/20' : 'border-zinc-700 bg-zinc-800'
+                  }`}
+                >
+                  <div className="mb-2">
+                    <PlayerPreview skinId={skin.id} isStatic={true} />
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className={`text-[8px] md:text-[10px] font-black mb-1 ${skin.isRainbow ? 'animate-rainbow-text' : 'text-white'}`}>
+                      {getSkinName(skin)}
                     </div>
+                    {!isUnlocked && (
+                      <div className="text-[7px] md:text-[8px] text-yellow-500 font-black uppercase">
+                        {skin.isVipOnly ? 'SOLO VIP' : skin.isCodeOnly ? 'ESCLUSIVA' : `${skin.price.toLocaleString()} ${t('gems', lang)}`}
+                      </div>
+                    )}
+                  </div>
+
+                  {isUnlocked ? (
+                    <button
+                      onClick={() => onEquipSkin(skin.id)}
+                      disabled={isActive}
+                      className={`w-full py-2 text-[8px] md:text-[10px] uppercase font-black transition-colors ${
+                        isActive 
+                          ? 'bg-zinc-700 text-zinc-500 cursor-default' 
+                          : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95'
+                      }`}
+                    >
+                      {isActive ? t('equipped', lang) : t('equip', lang)}
+                    </button>
+                  ) : (
+                    <button
+                      disabled={skin.isVipOnly || skin.isCodeOnly || userGems < skin.price}
+                      onClick={() => onBuySkin(skin)}
+                      className={`w-full py-2 text-[8px] md:text-[10px] uppercase font-black transition-colors ${
+                        (!skin.isVipOnly && !skin.isCodeOnly && userGems >= skin.price)
+                          ? 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
+                          : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {skin.isVipOnly ? 'VIP REQUIRED' : skin.isCodeOnly ? 'PASS/CODE ONLY' : (userGems >= skin.price ? t('buy', lang) : t('insufficientGems', lang))}
+                    </button>
                   )}
                 </div>
-
-                {isUnlocked ? (
-                  <button
-                    onClick={() => onEquip(skin.id)}
-                    disabled={isActive}
-                    className={`w-full py-2 text-[9px] md:text-[10px] uppercase font-bold transition-colors ${
-                      isActive 
-                        ? 'bg-zinc-700 text-zinc-500 cursor-default' 
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95'
-                    }`}
-                  >
-                    {isActive ? t('equipped', lang) : t('equip', lang)}
-                  </button>
-                ) : (
-                  <button
-                    disabled={skin.isVipOnly || skin.isCodeOnly || userGems < skin.price}
-                    onClick={() => onBuy(skin)}
-                    className={`w-full py-2 text-[9px] md:text-[10px] uppercase font-bold transition-colors ${
-                      (!skin.isVipOnly && !skin.isCodeOnly && userGems >= skin.price)
-                        ? 'bg-yellow-600 hover:bg-yellow-500 text-white active:scale-95'
-                        : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {skin.isVipOnly ? 'VIP REQUIRED' : skin.isCodeOnly ? 'PASS/CODE ONLY' : (userGems >= skin.price ? t('buy', lang) : t('insufficientGems', lang))}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex justify-center pt-6 border-t border-zinc-800">
-          <button
-            onClick={onClose}
-            className="bg-white text-black py-4 px-12 font-black hover:bg-zinc-200 transition-all active:scale-95 uppercase text-[12px] border-b-4 border-zinc-400 shadow-lg"
-          >
-            {t('close', lang)}
-          </button>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #111; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+        @keyframes rainbow-text { 0% { color: #ff0000; } 20% { color: #ffff00; } 40% { color: #00ff00; } 60% { color: #00ffff; } 80% { color: #0000ff; } 100% { color: #ff00ff; } }
+        .animate-rainbow-text { animation: rainbow-text 2s infinite linear; }
+      `}</style>
     </div>
   );
 };

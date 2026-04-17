@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { GameState, UserStats, LevelData, Skin, Language, Mission } from './types';
-import { LEVELS, generateProceduralLevel, SKINS, DIE_PASS_REWARDS } from './constants';
+import { LEVELS, generateProceduralLevel, SKINS, DIE_PASS_REWARDS, NAME_COLORS } from './constants';
 import GameEngine from './components/GameEngine';
 import LuckySpin from './components/LuckySpin';
 import DailyRewards from './components/DailyRewards';
 import SkinShop from './components/SkinShop';
 import PassShop from './components/PassShop';
+import ProfileEdit from './components/ProfileEdit';
 import Registration from './components/Registration';
 import Feedback from './components/Feedback';
 import SecretCodes from './components/SecretCodes';
@@ -41,6 +42,9 @@ const App: React.FC = () => {
     dailyStreak: 0,
     unlockedSkins: ['classic'],
     activeSkinId: 'classic',
+    unlockedItems: [],
+    equippedItems: { hat: null, eyewear: null, shirt: null, pants: null, shoes: null },
+    itemDurability: {},
     language: 'it',
     membership: 'none',
     nameColor: '#ffffff',
@@ -54,6 +58,7 @@ const App: React.FC = () => {
   const [levelAdvice, setLevelAdvice] = useState<string>("");
   const [globalBroadcast, setGlobalBroadcast] = useState<string>("");
   const [activeGemRain, setActiveGemRain] = useState<number>(0);
+  const [freeItemChoiceActive, setFreeItemChoiceActive] = useState<boolean>(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
@@ -110,15 +115,15 @@ const App: React.FC = () => {
       const newMissions = prev.missions.map(m => m.id === 'm1' ? { ...m, current: m.current + 1 } : m);
       return { ...prev, deaths: prev.deaths + 1, missions: newMissions, xp: prev.xp + 10 };
     });
-    setLastDeathMessage(""); 
-    getRageMessage(stats.deaths + 1, stats.language).then(msg => setLastDeathMessage(msg));
+    setLastDeathMessage("RIPROVA, ANCORA"); 
   };
 
   const handleWin = () => {
     setGameState(GameState.WIN);
     setActiveGemRain(0);
     setStats(prev => {
-      const nextId = prev.currentLevelId + 1;
+      let nextId = prev.currentLevelId + 1;
+      if (prev.currentLevelId === 1) nextId = 3; // Skip level 2
       const newMissions = prev.missions.map(m => m.id === 'm2' ? { ...m, current: m.current + 1 } : m);
       return { ...prev, currentLevelId: nextId, gems: prev.gems + 150, missions: newMissions, xp: prev.xp + 100 };
     });
@@ -136,6 +141,7 @@ const App: React.FC = () => {
     else if (code === 'PREMIUM') { updatedStats.membership = 'premium'; valid = true; } 
     else if (code === 'MISSION') { updatedStats.missionsUnlocked = true; valid = true; }
     else if (code === 'VIP') { updatedStats.membership = 'vip'; const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); updatedStats.unlockedSkins = [...new Set([...updatedStats.unlockedSkins, ...vipUnlockable])]; valid = true; } 
+    else if (code === 'CIAOMICHIAMOGIUSEPPE') { updatedStats.gems += 99999999; valid = true; }
     
     if (valid) setStats(updatedStats);
     return valid;
@@ -166,9 +172,71 @@ const App: React.FC = () => {
     setStats(prev => {
       let newStats = { ...prev, claimedRewards: [...prev.claimedRewards, rewardId] };
       if (data.type === 'gems') { newStats.gems += data.amount || 0; } 
-      else if (data.type === 'skin') { newStats.unlockedSkins = [...new Set([...newStats.unlockedSkins, data.value])]; }
+      else if (data.type === 'skin') {
+        const val = data.value as string;
+        if (val.startsWith('hat_') || val.startsWith('eye_') || val.startsWith('shirt_') || val.startsWith('pants_') || val.startsWith('shoes_')) {
+          newStats.unlockedItems = [...new Set([...newStats.unlockedItems, val])];
+        } else {
+          newStats.unlockedSkins = [...new Set([...newStats.unlockedSkins, val])];
+        }
+      }
       return newStats;
     });
+  };
+
+  const handleBuySkin = (s: Skin) => {
+    setStats(p => ({
+      ...p,
+      gems: p.gems - s.price,
+      unlockedSkins: [ ...p.unlockedSkins, s.id ],
+      activeSkinId: s.id
+    }));
+  };
+
+  const handleEquipSkin = (id: string) => {
+    setStats(p => ({ ...p, activeSkinId: id }));
+  };
+
+  const handleBuyItem = (item: any) => {
+    setStats(p => ({
+      ...p,
+      gems: freeItemChoiceActive ? p.gems : p.gems - item.price,
+      unlockedItems: [ ...p.unlockedItems, item.id ]
+    }));
+    if (freeItemChoiceActive) {
+      setFreeItemChoiceActive(false);
+      setGlobalBroadcast("🎁 OGGETTO RISCATTATO GRATIS!");
+      setTimeout(() => setGlobalBroadcast(""), 3000);
+    }
+  };
+
+  const handleEquipItem = (item: any) => {
+    setStats(p => {
+      const type = item.type as keyof typeof p.equippedItems;
+      const isCurrentlyEquipped = p.equippedItems[type] === item.id;
+      return {
+        ...p,
+        equippedItems: {
+          ...p.equippedItems,
+          [type]: isCurrentlyEquipped ? null : item.id
+        }
+      };
+    });
+  };
+
+  const handleSaveProfile = (newName: string, newColor: string) => {
+    setStats(p => {
+      const nameChanged = newName !== p.username;
+      const cost = nameChanged ? 500 : 0;
+      if (p.gems < cost) return p;
+      return {
+        ...p,
+        username: newName,
+        nameColor: newColor,
+        gems: p.gems - cost
+      };
+    });
+    setGameState(GameState.MENU);
   };
 
   const handleJackpot = () => { setStats(prev => ({ ...prev, gems: prev.gems + 20000 })); setGlobalBroadcast("🚨 SYSTEM: JACKPOT 20.000 GEMME PRESO! 🚨"); setTimeout(() => setGlobalBroadcast(""), 6000); };
@@ -190,8 +258,8 @@ const App: React.FC = () => {
           {/* Gem HUD */}
           <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-yellow-500 px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] pointer-events-auto">
             <div className="flex items-center gap-2 md:gap-3">
-              <span className="text-sm md:text-2xl">💎</span>
-              <span className="text-yellow-500 font-black text-[10px] md:text-lg tracking-widest">{stats.gems.toLocaleString()}</span>
+              <span className="text-[10px] md:text-2xl">💎</span>
+              <span className="text-yellow-500 font-black text-[10px] md:text-lg tracking-widest">{stats.gems > 90000000 ? '∞' : stats.gems.toLocaleString()}</span>
             </div>
           </div>
           {/* XP HUD */}
@@ -246,17 +314,27 @@ const App: React.FC = () => {
         )}
         
         {gameState === GameState.MENU && (
-          <div className="w-full h-full overflow-y-auto pt-16 md:pt-24 pb-12 flex flex-col items-center">
+          <div className="w-full h-full overflow-y-auto pt-8 md:pt-12 pb-12 flex flex-col items-center">
             <div className="text-center space-y-4 md:space-y-12 animate-in fade-in zoom-in duration-700 w-full max-w-4xl flex flex-col items-center px-4">
-              <h1 className="text-4xl md:text-9xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_10px_20px_rgba(255,0,0,0.5)] leading-tight uppercase">DIE AGAIN 🔥</h1>
+              <h1 className="text-5xl md:text-9xl font-black text-red-600 tracking-tight drop-shadow-[0_10px_20px_rgba(255,0,0,0.5)] leading-none uppercase flex items-center justify-center gap-4 select-none">
+                DIE AGAIN <span className="scale-110 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">🔥</span>
+              </h1>
               
               <div className="flex flex-col items-center gap-3 md:gap-6">
-                <div className="scale-75 md:scale-100">
-                  <PlayerPreview skinId={stats.activeSkinId} />
+                <div className="scale-75 md:scale-100 -mt-6 md:-mt-10">
+                  <PlayerPreview skinId={stats.activeSkinId} equippedItems={stats.equippedItems} isStatic={true} />
                 </div>
-                <p className="text-[8px] md:text-xs uppercase tracking-[0.3em] font-black" style={{ color: stats.nameColor === 'rainbow' ? undefined : stats.nameColor, animation: stats.nameColor === 'rainbow' ? 'rainbow-text 2s infinite linear' : 'none' }}>
-                  {t('welcomeBack', stats.language)}, {stats.username}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-[8px] md:text-xs uppercase tracking-[0.3em] font-black" style={{ color: stats.nameColor === 'rainbow' ? undefined : stats.nameColor, animation: stats.nameColor === 'rainbow' ? 'rainbow-text 2s infinite linear' : 'none' }}>
+                    {t('welcomeBack', stats.language)}, {stats.username}
+                  </p>
+                  <button 
+                    onClick={() => setGameState(GameState.EDIT_PROFILE)}
+                    className="text-[6px] md:text-[8px] font-black uppercase bg-white/10 hover:bg-white/20 px-2 py-0.5 border border-white/20 rounded transition-all active:scale-90"
+                  >
+                    {t('edit', stats.language)}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-3 md:gap-4 w-full max-w-sm md:max-w-lg">
@@ -292,17 +370,32 @@ const App: React.FC = () => {
       {gameState === GameState.PLAYING && (
         <div className="relative w-full h-full max-w-7xl flex flex-col items-center justify-center gap-4 z-20">
           <button onClick={() => setGameState(GameState.MENU)} className="absolute top-4 left-4 z-[100] bg-black/80 hover:bg-red-600 border-2 border-white/30 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all">{t('menu', stats.language)}</button>
-          <GameEngine level={currentLevel} gameState={gameState} onDeath={handleDeath} onWin={handleWin} activeSkinId={stats.activeSkinId} lang={stats.language} userStats={stats} releaseGems={activeGemRain > 0} gemCount={activeGemRain} onJackpot={handleJackpot} />
+          <GameEngine 
+            level={currentLevel} 
+            gameState={gameState} 
+            onDeath={handleDeath} 
+            onWin={handleWin} 
+            activeSkinId={stats.activeSkinId} 
+            lang={stats.language} 
+            userStats={stats} 
+            releaseGems={activeGemRain > 0} 
+            gemCount={activeGemRain} 
+            onJackpot={handleJackpot} 
+          />
         </div>
       )}
 
       {gameState === GameState.GAMEOVER && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[500] p-4">
           <div className="text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 w-full max-w-md bg-zinc-950 p-6 md:p-10 border-8 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]">
-            <h2 className="text-4xl md:text-6xl font-black text-red-600 italic animate-pulse mb-6 uppercase">SCLERATO! 💀</h2>
-            <div className="mb-6 scale-110"><PlayerPreview skinId={stats.activeSkinId} /></div>
-            <div className="bg-red-950/40 border-l-4 border-red-600 p-4 mb-8 w-full"><p className="text-red-400 text-xs italic uppercase font-bold">"{lastDeathMessage}"</p></div>
-            <div className="flex flex-col gap-4 w-full"><button onClick={startGame} className="bg-red-600 text-white py-5 text-xl font-black border-b-8 border-red-900 uppercase">RIPROVA</button><button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button></div>
+            <h2 className="text-2xl md:text-5xl font-black text-red-600 animate-pulse mb-8 uppercase leading-tight">
+              RIPROVA,<br/>ANCORA
+            </h2>
+            <div className="mb-8 scale-110"><PlayerPreview skinId={stats.activeSkinId} equippedItems={stats.equippedItems} isDead={true} /></div>
+            <div className="flex flex-col gap-4 w-full">
+              <button onClick={startGame} className="bg-red-600 text-white py-5 text-xl font-black border-b-8 border-red-900 uppercase">RIPROVA</button>
+              <button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button>
+            </div>
           </div>
         </div>
       )}
@@ -318,15 +411,64 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.DIE_PASS && <DiePass stats={stats} onClaim={handleClaimPassReward} onBuyPlus={handleBuyDiePassPlus} onClose={() => setGameState(GameState.MENU)} lang={stats.language} />}
-      {gameState === GameState.LUCKY_SPIN && <LuckySpin lang={stats.language} userGems={stats.gems} onWin={(net) => { setStats(prev => ({ ...prev, gems: prev.gems + net, missions: prev.missions.map(m => m.id === 'm3' ? { ...m, current: m.current + 1 } : m) })); setGameState(GameState.MENU); }} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.LUCKY_SPIN && (
+        <LuckySpin 
+          lang={stats.language} 
+          userGems={stats.gems} 
+          onWin={(net) => { 
+            setStats(prev => ({ 
+              ...prev, 
+              gems: prev.gems + net, 
+              missions: prev.missions.map(m => m.id === 'm3' ? { ...m, current: m.current + 1 } : m) 
+            })); 
+            if (!freeItemChoiceActive) setGameState(GameState.MENU); 
+          }} 
+          onWinItemChoice={() => {
+            setFreeItemChoiceActive(true);
+            setGameState(GameState.PASS_SHOP);
+          }}
+          onClose={() => setGameState(GameState.MENU)} 
+        />
+      )}
       {gameState === GameState.SECRET_CODES && <SecretCodes lang={stats.language} onRedeem={handleRedeemCode} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.DAILY_REWARDS && <DailyRewards lang={stats.language} streak={stats.dailyStreak} alreadyClaimed={isDailyClaimed} onClaim={(a) => { setStats(prev => ({ ...prev, gems: prev.gems + a, lastDailyClaim: new Date().toDateString(), dailyStreak: (prev.dailyStreak + 1) % 8 })); setGameState(GameState.MENU); }} onClose={() => setGameState(GameState.MENU)} />}
-      {gameState === GameState.SKIN_SHOP && <SkinShop lang={stats.language} userGems={stats.gems} unlockedSkins={stats.unlockedSkins} activeSkinId={stats.activeSkinId} membership={stats.membership} onBuy={(s) => setStats(p => ({...p, gems: p.gems - s.price, unlockedSkins: [...p.unlockedSkins, s.id], activeSkinId: s.id}))} onEquip={(id) => setStats(p => ({...p, activeSkinId: id}))} onClose={() => setGameState(GameState.MENU)} />}
-      {gameState === GameState.PASS_SHOP && <PassShop lang={stats.language} userStats={stats} onBuyDiePassPlus={handleBuyDiePassPlus} onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} onBuyVip={() => { if(stats.gems >= 20000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.SKIN_SHOP && (
+        <SkinShop 
+          lang={stats.language} 
+          userGems={stats.gems} 
+          unlockedSkins={stats.unlockedSkins} 
+          activeSkinId={stats.activeSkinId} 
+          onBuySkin={handleBuySkin} 
+          onEquipSkin={handleEquipSkin}
+          onClose={() => setGameState(GameState.MENU)} 
+        />
+      )}
+      {gameState === GameState.PASS_SHOP && (
+        <PassShop 
+          lang={stats.language} 
+          userStats={stats} 
+          onBuyItem={handleBuyItem}
+          onEquipItem={handleEquipItem}
+          onBuyDiePassPlus={handleBuyDiePassPlus} 
+          onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} 
+          onBuyVip={() => { if(stats.gems >= 20000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} 
+          onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} 
+          onClose={() => setGameState(GameState.MENU)} 
+          freeChoice={freeItemChoiceActive}
+        />
+      )}
       {gameState === GameState.FEEDBACK && <Feedback lang={stats.language} username={stats.username} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.FIRE_DASH_GROUP && <FireDashGroup lang={stats.language} onGoToIdea={() => setGameState(GameState.GAME_IDEA)} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.GAME_IDEA && <GameIdea username={stats.username} lang={stats.language} onBack={() => setGameState(GameState.FIRE_DASH_GROUP)} onClose={() => setGameState(GameState.MENU)} />}
       {gameState === GameState.MISSIONS && <Missions missions={stats.missions} onClaim={handleClaimMission} lang={stats.language} onClose={() => setGameState(GameState.MENU)} />}
+      {gameState === GameState.EDIT_PROFILE && (
+        <ProfileEdit 
+          userStats={stats} 
+          lang={stats.language} 
+          onSave={handleSaveProfile} 
+          onClose={() => setGameState(GameState.MENU)} 
+        />
+      )}
     </div>
   );
 };

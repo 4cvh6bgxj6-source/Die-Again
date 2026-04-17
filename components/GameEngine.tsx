@@ -33,12 +33,14 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
   const isVip = userStats.membership === 'vip';
   const isUltimateAdmin = activeSkinId === 'admin_power';
   const isAdmin = activeSkin.isAdmin || isUltimateAdmin;
+  
+  const equippedItems = userStats.equippedItems;
 
   const [level, setLevel] = useState(initialLevel);
-  const [adminFly, setAdminFly] = useState(isUltimateAdmin);
+  const [adminFly, setAdminFly] = useState(isUltimateAdmin || activeSkin.ability === 'fly');
   const [adminNoTraps, setAdminNoTraps] = useState(isUltimateAdmin);
 
-  const [player, setPlayer] = useState({
+  const playerRef = useRef({
     pos: { ...initialLevel.playerStart },
     vel: { x: 0, y: 0 },
     isGrounded: false,
@@ -46,6 +48,8 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     facingRight: true,
     isMoving: false
   });
+
+  const [player, setPlayer] = useState(playerRef.current);
 
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 }); 
@@ -114,7 +118,9 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     setLevel(initialLevel);
     resetObjects(initialLevel);
     isDeadRef.current = false;
-    setPlayer(p => ({ ...p, pos: { ...initialLevel.playerStart }, vel: { x: 0, y: 0 }, facingRight: true, isMoving: false }));
+    const initialPlayer = { ...playerRef.current, pos: { ...initialLevel.playerStart }, vel: { x: 0, y: 0 }, facingRight: true, isMoving: false };
+    playerRef.current = initialPlayer;
+    setPlayer(initialPlayer);
     if (isUltimateAdmin) {
       setAdminFly(true);
       setAdminNoTraps(true);
@@ -139,7 +145,9 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     const newLvl = generateProceduralLevel(level.id);
     setLevel(newLvl);
     resetObjects(newLvl);
-    setPlayer(p => ({ ...p, pos: { ...newLvl.playerStart }, vel: { x: 0, y: 0 }, isMoving: false }));
+    const resetPlayer = { ...playerRef.current, pos: { ...newLvl.playerStart }, vel: { x: 0, y: 0 }, isMoving: false };
+    playerRef.current = resetPlayer;
+    setPlayer(resetPlayer);
   };
 
   const checkCollision = (p: Vector2D, objState: any) => {
@@ -175,88 +183,127 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
       }
     });
 
-    setPlayer(prev => {
-      let nextPos = { ...prev.pos };
-      let nextVel = { ...prev.vel };
-      let nextGrounded = false;
-      let nextFacing = prev.facingRight;
-      let moving = false;
+    const prev = playerRef.current;
+    let nextPos = { ...prev.pos };
+    let nextVel = { ...prev.vel };
+    let nextGrounded = false;
+    let nextFacing = prev.facingRight;
+    let moving = false;
 
-      if (keys.current['ArrowLeft'] || keys.current['KeyA'] || keys.current['VirtualLeft']) {
-        nextVel.x = -MOVE_SPEED; nextFacing = false; moving = true;
-      } else if (keys.current['ArrowRight'] || keys.current['KeyD'] || keys.current['VirtualRight']) {
-        nextVel.x = MOVE_SPEED; nextFacing = true; moving = true;
-      } else { nextVel.x = 0; }
+    if (keys.current['ArrowLeft'] || keys.current['KeyA'] || keys.current['VirtualLeft']) {
+      nextVel.x = -MOVE_SPEED; nextFacing = false; moving = true;
+    } else if (keys.current['ArrowRight'] || keys.current['KeyD'] || keys.current['VirtualRight']) {
+      nextVel.x = MOVE_SPEED; nextFacing = true; moving = true;
+    } else { nextVel.x = 0; }
 
-      if (adminFly) {
-        if (keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['VirtualUp']) { nextVel.y = -MOVE_SPEED; moving = true; }
-        else if (keys.current['ArrowDown'] || keys.current['KeyS'] || keys.current['VirtualDown']) { nextVel.y = MOVE_SPEED; moving = true; }
-        else nextVel.y = 0;
-        nextGrounded = true;
-      } else {
-        if ((keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['Space'] || keys.current['VirtualJump']) && prev.isGrounded) {
-          nextVel.y = JUMP_FORCE;
+    // Ability: Fly
+    if (adminFly) {
+      if (keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['VirtualUp']) { nextVel.y = -MOVE_SPEED; moving = true; }
+      else if (keys.current['ArrowDown'] || keys.current['KeyS'] || keys.current['VirtualDown']) { nextVel.y = MOVE_SPEED; moving = true; }
+      else nextVel.y = 0;
+      nextGrounded = true;
+    } else {
+      if ((keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['Space'] || keys.current['VirtualJump']) && prev.isGrounded) {
+        nextVel.y = JUMP_FORCE;
+      }
+      nextVel.y += GRAVITY;
+    }
+
+    nextPos.x += nextVel.x; nextPos.y += nextVel.y;
+
+    if (nextPos.x < 0) nextPos.x = 0;
+    if (nextPos.x > CANVAS_WIDTH - PLAYER_SIZE) nextPos.x = CANVAS_WIDTH - PLAYER_SIZE;
+    
+    if (nextPos.y > CANVAS_HEIGHT) { 
+      triggerDeath(); 
+      requestRef.current = requestAnimationFrame(update);
+      return; 
+    }
+
+    let diedThisFrame = false;
+    let wonThisFrame = false;
+
+    objectsStateRef.current.forEach((obj) => {
+      if (!obj.active) return;
+
+      if (obj.type === 'wind_zone') {
+        if (checkCollision(nextPos, obj)) {
+          nextPos.x += 1.5; // Spinta del vento
         }
-        nextVel.y += GRAVITY;
       }
 
-      nextPos.x += nextVel.x; nextPos.y += nextVel.y;
-
-      if (nextPos.x < 0) nextPos.x = 0;
-      if (nextPos.x > CANVAS_WIDTH - PLAYER_SIZE) nextPos.x = CANVAS_WIDTH - PLAYER_SIZE;
-      if (nextPos.y > CANVAS_HEIGHT) { triggerDeath(); return prev; }
-
-      let diedThisFrame = false;
-
-      objectsStateRef.current.forEach((obj) => {
-        if (!obj.active) return;
-        if (obj.type === 'collectible_gem') {
-          obj.timer += 0.15;
-          obj.currentPos.y = obj.pos.y + Math.sin(obj.timer) * 15;
-          if (checkCollision(nextPos, obj)) {
-            obj.active = false; collectedGemsCount.current++;
-            if (collectedGemsCount.current === totalGemsReleased.current && totalGemsReleased.current > 0) onJackpot?.();
-          }
-          return;
-        }
-        if (obj.type === 'opening_floor') {
-          const dist = Math.abs(prev.pos.x - (obj.currentPos.x + obj.size.x / 2));
-          if (dist < 100 && obj.timer === 0) obj.timer = 1;
-          if (obj.timer > 0) {
-            obj.timer++;
-            if (obj.timer < 40) obj.tremble = Math.sin(obj.timer * 0.8) * 3;
-            else if (!isVip && !isAdmin) { obj.tremble = 0; obj.currentPos.y += 20; if (obj.currentPos.y > CANVAS_HEIGHT + 200) obj.active = false; }
-          }
-        }
-        if (obj.type === 'moving_wall') {
-           const range = 300;
-           const speed = (isVip || isAdmin) ? (5 + (level.id * 0.2)) * 0.5 : 5 + (level.id * 0.2);
-           obj.currentPos.y += obj.dir * speed;
-           if (Math.abs(obj.currentPos.y - obj.initialPos.y) > range) obj.dir *= -1;
-        }
-        if (obj.type === 'falling_spike') {
-           if (obj.dir === 0 && Math.abs(prev.pos.x - (obj.currentPos.x + obj.size.x/2)) < 80) obj.dir = 1;
-           if (obj.dir === 1) obj.currentPos.y += 25;
-        }
+      if (obj.type === 'reverse_controls') {
         if (checkCollision(nextPos, obj)) {
-          if (obj.isLethal || obj.type === 'trap' || obj.type === 'falling_spike') {
-            if (!adminNoTraps) diedThisFrame = true;
-          } else if (obj.type === 'wall' || obj.type === 'moving_wall' || obj.type === 'disappearing_floor' || obj.type === 'opening_floor') {
-            const currentObjY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
-            if (prev.pos.y + PLAYER_SIZE <= currentObjY + 15) {
-              nextPos.y = currentObjY - PLAYER_SIZE; nextVel.y = 0; nextGrounded = true;
-              if (obj.type === 'disappearing_floor' && !isVip && !isAdmin) { obj.timer++; if (obj.timer > 30) obj.active = false; }
-            } else if (!adminFly) {
-              if (prev.pos.y >= currentObjY + obj.size.y - 15) { nextPos.y = currentObjY + obj.size.y; nextVel.y = 1; }
-              else if (prev.pos.x + PLAYER_SIZE <= obj.currentPos.x + 15) { nextPos.x = obj.currentPos.x - PLAYER_SIZE; }
-              else if (prev.pos.x >= obj.currentPos.x + obj.size.x - 15) { nextPos.x = obj.currentPos.x + obj.size.x; }
-            }
-          } else if (obj.type === 'goal') { onWin(); }
+          // handled implicitly if we modify the input logic, 
+          // but here we can just apply a force in opposite direction of movement
+          if (nextVel.x > 0) nextPos.x -= 8;
+          else if (nextVel.x < 0) nextPos.x += 8;
         }
-      });
-      if (diedThisFrame) { triggerDeath(); return prev; }
-      return { ...prev, pos: nextPos, vel: nextVel, isGrounded: nextGrounded, facingRight: nextFacing, isMoving: moving };
+      }
+
+      if (obj.type === 'collectible_gem') {
+        obj.timer += 0.15;
+        obj.currentPos.y = obj.pos.y + Math.sin(obj.timer) * 15;
+        if (checkCollision(nextPos, obj)) {
+          obj.active = false; collectedGemsCount.current++;
+          if (collectedGemsCount.current === totalGemsReleased.current && totalGemsReleased.current > 0) onJackpot?.();
+        }
+        return;
+      }
+      if (obj.type === 'opening_floor') {
+        const dist = Math.abs(prev.pos.x - (obj.currentPos.x + obj.size.x / 2));
+        if (dist < 100 && obj.timer === 0) obj.timer = 1;
+        if (obj.timer > 0) {
+          obj.timer++;
+          if (obj.timer < 40) obj.tremble = Math.sin(obj.timer * 0.8) * 3;
+          else if (!isVip && !isAdmin) { obj.tremble = 0; obj.currentPos.y += 20; if (obj.currentPos.y > CANVAS_HEIGHT + 200) obj.active = false; }
+        }
+      }
+      if (obj.type === 'moving_wall') {
+         const range = 300;
+         const speed = (isVip || isAdmin) ? (5 + (level.id * 0.2)) * 0.5 : 5 + (level.id * 0.2);
+         obj.currentPos.y += obj.dir * speed;
+         if (Math.abs(obj.currentPos.y - obj.initialPos.y) > range) obj.dir *= -1;
+      }
+      if (obj.type === 'falling_spike') {
+         if (obj.dir === 0 && Math.abs(prev.pos.x - (obj.currentPos.x + obj.size.x/2)) < 80) obj.dir = 1;
+         if (obj.dir === 1) obj.currentPos.y += 25;
+      }
+      if (checkCollision(nextPos, obj)) {
+        if (obj.isLethal || obj.type === 'trap' || obj.type === 'falling_spike' || obj.type === 'teleport_trap' || obj.type === 'fake_goal') {
+          if (!adminNoTraps) {
+            if (obj.type === 'teleport_trap') {
+               nextPos = { x: 50, y: 600 }; // Reset position without dying
+            } else if (obj.type === 'fake_goal') {
+               diedThisFrame = true;
+            } else {
+               diedThisFrame = true;
+            }
+          }
+        } else if (obj.type === 'wall' || obj.type === 'moving_wall' || obj.type === 'disappearing_floor' || obj.type === 'opening_floor' || obj.type === 'invisible_wall') {
+          const currentObjY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
+          if (prev.pos.y + PLAYER_SIZE <= currentObjY + 15) {
+            nextPos.y = currentObjY - PLAYER_SIZE; nextVel.y = 0; nextGrounded = true;
+            if (obj.type === 'disappearing_floor' && !isVip && !isAdmin) { obj.timer++; if (obj.timer > 30) obj.active = false; }
+          } else if (!adminFly) {
+            if (prev.pos.y >= currentObjY + obj.size.y - 15) { nextPos.y = currentObjY + obj.size.y; nextVel.y = 1; }
+            else if (prev.pos.x + PLAYER_SIZE <= obj.currentPos.x + 15) { nextPos.x = obj.currentPos.x - PLAYER_SIZE; }
+            else if (prev.pos.x >= obj.currentPos.x + obj.size.x - 15) { nextPos.x = obj.currentPos.x + obj.size.x; }
+          }
+        } else if (obj.type === 'goal') { wonThisFrame = true; }
+      }
     });
+
+    if (diedThisFrame) { 
+      triggerDeath(); 
+    } else if (wonThisFrame) {
+      onWin();
+    } else {
+      const nextPlayerState = { ...prev, pos: nextPos, vel: nextVel, isGrounded: nextGrounded, facingRight: nextFacing, isMoving: moving };
+      playerRef.current = nextPlayerState;
+      setPlayer(nextPlayerState);
+    }
+
     requestRef.current = requestAnimationFrame(update);
   }, [gameState, level, onWin, triggerDeath, isVip, isAdmin, adminFly, adminNoTraps, onJackpot]);
 
@@ -307,24 +354,69 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
       objectsStateRef.current.forEach((obj) => {
         if (!obj.active) return;
         const renderY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
-        ctx.fillStyle = (adminNoTraps && (obj.isLethal || obj.type === 'trap' || obj.type === 'falling_spike')) ? '#222' : obj.color;
-        if (obj.type === 'falling_spike' || obj.type === 'trap') {
+        
+        // Hidden Trap Visibility Logic
+        let finalColor = obj.color;
+        if (obj.isLethal && obj.type === 'wall' && !adminNoTraps) {
+          const dist = Math.sqrt(Math.pow(player.pos.x - obj.currentPos.x, 2) + Math.pow(player.pos.y - obj.currentPos.y, 2));
+          if (dist < 150) {
+            // Start showing red tint when close
+            const intensity = Math.max(0, 1 - (dist / 150));
+            finalColor = `rgb(${Math.floor(109 + intensity * 146)}, ${Math.floor(40 - intensity * 40)}, ${Math.floor(217 - intensity * 217)})`;
+          }
+        }
+
+        ctx.fillStyle = (adminNoTraps && (obj.isLethal || obj.type === 'trap' || obj.type === 'falling_spike')) ? '#222' : finalColor;
+        
+        if (obj.type === 'falling_spike' || obj.type === 'trap' || obj.type === 'illusory_trap') {
            ctx.beginPath(); 
            if (obj.type === 'falling_spike') { ctx.moveTo(obj.currentPos.x, renderY); ctx.lineTo(obj.currentPos.x + obj.size.x / 2, renderY + obj.size.y); ctx.lineTo(obj.currentPos.x + obj.size.x, renderY); } 
            else { ctx.moveTo(obj.currentPos.x, renderY + obj.size.y); ctx.lineTo(obj.currentPos.x + obj.size.x / 2, renderY); ctx.lineTo(obj.currentPos.x + obj.size.x, renderY + obj.size.y); }
            ctx.fill();
-        } else { ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y); }
+        } else if (obj.type === 'wind_zone' || obj.type === 'reverse_controls') {
+           ctx.globalAlpha = 0.2;
+           ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y);
+           ctx.globalAlpha = 1.0;
+           if (obj.type === 'wind_zone') {
+              ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
+              for(let i=0; i<3; i++) {
+                const yOff = (Date.now() / 10 + i * 20) % obj.size.y;
+                ctx.beginPath(); ctx.moveTo(obj.currentPos.x, renderY + yOff); ctx.lineTo(obj.currentPos.x + obj.size.x, renderY + yOff); ctx.stroke();
+              }
+           }
+        } else if (obj.type === 'invisible_wall') {
+           if (isAdmin) { ctx.globalAlpha = 0.3; ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y); ctx.globalAlpha = 1.0; }
+        } else { 
+           ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y); 
+           if (obj.type === 'wall' || obj.type === 'fake_wall' || obj.type === 'moving_wall') {
+              ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2; ctx.strokeRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y);
+           }
+           if (obj.type === 'goal' || obj.type === 'fake_goal') {
+              ctx.shadowBlur = 20; ctx.shadowColor = obj.color;
+              ctx.strokeRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y);
+              ctx.shadowBlur = 0;
+           }
+        }
       });
 
       // Player Render
       ctx.save(); ctx.translate(player.pos.x + PLAYER_SIZE/2, player.pos.y + PLAYER_SIZE/2);
       if (!player.facingRight) ctx.scale(-1, 1);
       
-      const skinColor = isUltimateAdmin ? `hsl(${Date.now() % 360}, 100%, 70%)` : (activeSkin.isAdmin ? `hsl(${Date.now() % 360}, 100%, 50%)` : activeSkin.color);
+      let skinColor = activeSkin.color;
+      if (activeSkin.isRainbow) {
+         const hue = (Date.now() / 10) % 360;
+         skinColor = `hsl(${hue}, 100%, 50%)`;
+      } else if (isUltimateAdmin) {
+         skinColor = `hsl(${Date.now() % 360}, 100%, 70%)`;
+      } else if (activeSkin.isAdmin) {
+         skinColor = `hsl(${Date.now() % 360}, 100%, 50%)`;
+      }
+
       ctx.strokeStyle = skinColor; ctx.lineWidth = 4;
       ctx.lineCap = 'round';
 
-      if (isUltimateAdmin) {
+      if (isUltimateAdmin || activeSkin.isRainbow) {
         ctx.shadowBlur = 15;
         ctx.shadowColor = skinColor;
       }
@@ -334,18 +426,186 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
       // Corpo
       ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 10); ctx.stroke();
       
+      // Items Rendering (COSMETICS)
+      const hat = equippedItems.hat;
+      const eyewear = equippedItems.eyewear;
+      const shirt = equippedItems.shirt;
+      const pants = equippedItems.pants;
+      const shoes = equippedItems.shoes;
+
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = '#000';
+
+      if (shoes) {
+        const isBoots = shoes === 'shoes_boots';
+        const isDuck = shoes === 'shoes_duck_vip';
+        let shoeColor = '#111';
+        let logoColor = '#fff';
+
+        if (shoes.includes('yellow') || isBoots || isDuck) shoeColor = '#fbbf24';
+        else if (shoes.includes('white')) {
+          shoeColor = '#fff';
+          logoColor = '#000';
+        }
+        else if (shoes.includes('sneakers')) {
+          shoeColor = '#111';
+          logoColor = '#888';
+        }
+        else if (shoes.includes('orange')) shoeColor = '#f97316';
+
+        if (isBoots || isDuck) logoColor = '#f97316';
+
+        // Left Shoe
+        ctx.fillStyle = shoeColor;
+        ctx.fillRect(-9, 17, 7, 5);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.strokeRect(-9, 17, 7, 5);
+        
+        if (isDuck) {
+          ctx.fillStyle = '#f97316'; // Beak
+          ctx.fillRect(-4, 18, 2, 2);
+          ctx.fillStyle = '#000'; // Eye
+          ctx.fillRect(-8, 18, 1, 1);
+        } else {
+          ctx.strokeStyle = logoColor;
+          ctx.beginPath(); ctx.moveTo(-7, 18); ctx.lineTo(-4, 20); ctx.stroke();
+        }
+        
+        // Right Shoe
+        ctx.fillStyle = shoeColor;
+        ctx.fillRect(2, 17, 7, 5);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.strokeRect(2, 17, 7, 5);
+        
+        if (isDuck) {
+          ctx.fillStyle = '#f97316'; // Beak
+          ctx.fillRect(7, 18, 2, 2);
+          ctx.fillStyle = '#000'; // Eye
+          ctx.fillRect(3, 18, 1, 1);
+        } else {
+          ctx.strokeStyle = logoColor;
+          ctx.beginPath(); ctx.moveTo(4, 18); ctx.lineTo(7, 20); ctx.stroke();
+        }
+      }
+
+      if (shirt) {
+        ctx.fillStyle = shirt === 'shirt_duck' ? '#fbbf24' : '#fff';
+        ctx.fillRect(-1.5, -1, 3, 11);
+        ctx.strokeRect(-1.5, -1, 3, 11);
+
+        if (shirt === 'shirt_duck') {
+           ctx.save();
+           ctx.translate(1.5, 4);
+           ctx.scale(0.8, 0.8);
+           ctx.fillStyle = '#fbbf24';
+           ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+           ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.stroke();
+           ctx.fillStyle = '#f97316';
+           ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(4, -1); ctx.lineTo(4, 1); ctx.fill();
+           ctx.fillStyle = '#000';
+           ctx.beginPath(); ctx.arc(-1, -1, 0.5, 0, Math.PI * 2); ctx.fill();
+           ctx.restore();
+        }
+      }
+
+      if (hat) {
+        ctx.save();
+        ctx.translate(0, -14);
+        if (hat === 'hat_crown') {
+           ctx.fillStyle = '#ffd700';
+           ctx.beginPath();
+           ctx.moveTo(-7, 0); ctx.lineTo(-7, -6); ctx.lineTo(-4, -1); ctx.lineTo(0, -6); ctx.lineTo(4, -1); ctx.lineTo(7, -6); ctx.lineTo(7, 0); 
+           ctx.closePath(); ctx.fill();
+           ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.stroke();
+        } else if (hat === 'hat_duck') {
+           // Duck Hat
+           ctx.fillStyle = '#fbbf24';
+           ctx.beginPath(); ctx.arc(0, 0, 6, Math.PI, 0); ctx.fill();
+           ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.stroke();
+           // Beak
+           ctx.fillStyle = '#f97316';
+           ctx.beginPath(); ctx.moveTo(4, -2); ctx.lineTo(8, -1); ctx.lineTo(4, 0); ctx.fill();
+           // Eye
+           ctx.fillStyle = '#000';
+           ctx.beginPath(); ctx.arc(2, -3, 0.8, 0, Math.PI * 2); ctx.fill();
+        } else {
+           // Classic Cap with Brim
+           ctx.fillStyle = hat === 'hat_cap_red' ? '#ef4444' : '#3b82f6';
+           // Hat base (dome)
+           ctx.beginPath(); ctx.arc(0, 0, 6, Math.PI, 0); ctx.fill();
+           ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.stroke();
+           // Brim
+           ctx.fillRect(0, -1, 10, 2);
+           ctx.strokeRect(0, -1, 10, 2);
+        }
+        ctx.restore();
+      }
+
+      if (eyewear) {
+        ctx.save();
+        ctx.translate(0, -9);
+        ctx.lineWidth = 0.8;
+        if (eyewear === 'eye_sunglasses') {
+           ctx.fillStyle = '#000';
+           ctx.fillRect(-5, 0, 4, 3); ctx.fillRect(1, 0, 4, 3);
+           ctx.strokeStyle = '#000';
+           ctx.beginPath(); ctx.moveTo(-1, 1); ctx.lineTo(1, 1); ctx.stroke();
+        } else {
+           ctx.strokeStyle = '#fff';
+           ctx.strokeRect(-5, 0, 4, 3); ctx.strokeRect(1, 0, 4, 3);
+           ctx.beginPath(); ctx.moveTo(-1, 1); ctx.lineTo(1, 1); ctx.stroke();
+           // Draw eyes behind nerd glasses
+           ctx.fillStyle = '#000';
+           ctx.beginPath(); ctx.arc(-3, 1.5, 0.5, 0, Math.PI * 2); ctx.fill();
+           ctx.beginPath(); ctx.arc(3, 1.5, 0.5, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+
       // Animazione Braccia e Gambe
       const time = Date.now() / 150;
-      const wave = player.isMoving ? Math.sin(time) * 12 : 0;
-      const walk = player.isMoving ? Math.sin(time) * 10 : 0;
+      const armWave = player.isMoving ? Math.sin(time) * 15 : Math.sin(time * 0.5) * 2;
+      const legWalk = player.isMoving ? Math.sin(time) * 12 : 4; // 4 is idle leg spread
 
-      // Braccia
-      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(10, 2 + wave); ctx.stroke(); 
-      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(-10, 2 - wave); ctx.stroke(); 
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = skinColor;
+
+      // Braccia (Omino base)
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = skinColor;
+      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(10, 2 + armWave); ctx.stroke(); 
+      ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(-10, 2 - armWave); ctx.stroke(); 
       
-      // Gambe
-      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(walk, 20); ctx.stroke(); 
-      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-walk, 20); ctx.stroke(); 
+      // Gambe (Omino base)
+      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(legWalk, 22); ctx.stroke(); 
+      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-legWalk, 22); ctx.stroke(); 
+
+      // Pantaloni (Sopra l'omino)
+      if (pants) {
+        ctx.save();
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = pants.includes('jeans') ? '#3b82f6' : (pants === 'pants_duck' ? '#fbbf24' : '#666');
+        ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(legWalk, 22); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-legWalk, 22); ctx.stroke();
+
+        if (pants === 'pants_duck') {
+          // Logo Paperella sulle gambe
+          const drawMiniDuck = (lx: number, ly: number) => {
+            ctx.save();
+            ctx.translate(lx, ly);
+            ctx.scale(0.5, 0.5);
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5; ctx.stroke();
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(4, -1); ctx.lineTo(4, 1); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(-1, -1, 0.5, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+          };
+          drawMiniDuck(legWalk / 2, 16);
+          drawMiniDuck(-legWalk / 2, 16);
+        }
+        ctx.restore();
+      }
 
       ctx.restore();
     };
@@ -404,15 +664,18 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
           >
             <div className="w-10 h-10 bg-white/40 rounded-full absolute" style={{ transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)` }} />
           </div>
-          {!adminFly && (
-            <div 
-              className="w-24 h-24 rounded-full border-4 border-red-500/40 bg-red-500/20 flex items-center justify-center pointer-events-auto touch-none active:scale-90 transition-transform" 
-              onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }} 
-              onTouchEnd={() => { keys.current['VirtualJump'] = false; }}
-            >
-              <span className="text-[10px] text-red-100 font-black uppercase">{t('jump', lang)}</span>
-            </div>
-          )}
+          
+          <div className="flex gap-4 pointer-events-auto">
+            {!adminFly && (
+              <div 
+                className="w-24 h-24 rounded-full border-4 border-red-500/40 bg-red-500/20 flex items-center justify-center touch-none active:scale-90 transition-transform" 
+                onTouchStart={(e) => { e.preventDefault(); keys.current['VirtualJump'] = true; }} 
+                onTouchEnd={() => { keys.current['VirtualJump'] = false; }}
+              >
+                <span className="text-[10px] text-red-100 font-black uppercase">{t('jump', lang)}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

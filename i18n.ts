@@ -12,8 +12,8 @@ export const translations = {
     playLevel: "GIOCA LIVELLO",
     spin: "SPIN",
     gifts: "REGALI",
-    shop: "NEGOZIO",
-    pass: "PASS",
+    shop: "SKIN",
+    pass: "NEGOZIO",
     feedback: "FEEDBACK",
     codes: "CODICI",
     deaths: "MORTE",
@@ -29,7 +29,7 @@ export const translations = {
     close: "CHIUDI",
     dailyRewards: "REGALI GIORNALIERI",
     day: "GIORNO",
-    skinShop: "NEGOZIO SKIN",
+    skinShop: "SKIN",
     skinClassic: "CLASSICO",
     skinGold: "ORO",
     skinRuby: "RUBINO",
@@ -77,7 +77,12 @@ export const translations = {
     ideaPlaceholder: "Descrivi il gioco dei tuoi sogni...",
     sendIdea: "INVIA IDEA AL GRUPPO",
     ideaSent: "IDEA RICEVUTA! Gli sviluppatori la leggeranno con cura.",
-    back: "INDIETRO"
+    back: "INDIETRO",
+    edit: "MODIFICA",
+    save: "SALVA",
+    changeName: "CAMBIA NOME",
+    nameColorTitle: "COLORE NOME",
+    nameChangeCost: "CAMBIO NOME (500 💎)"
   },
   en: {
     newUser: "NEW USER",
@@ -106,7 +111,7 @@ export const translations = {
     close: "CLOSE",
     dailyRewards: "DAILY GIFTS",
     day: "DAY",
-    skinShop: "SKIN SHOP",
+    skinShop: "SKIN",
     skinClassic: "CLASSIC",
     skinGold: "GOLD",
     skinRuby: "RUBY",
@@ -154,7 +159,12 @@ export const translations = {
     ideaPlaceholder: "Describe your dream game...",
     sendIdea: "SEND IDEA TO GROUP",
     ideaSent: "IDEA RECEIVED! The developers will read it carefully.",
-    back: "BACK"
+    back: "BACK",
+    edit: "EDIT",
+    save: "SAVE",
+    changeName: "CHANGE NAME",
+    nameColorTitle: "NAME COLOR",
+    nameChangeCost: "CHANGE NAME (500 💎)"
   }
 };
 

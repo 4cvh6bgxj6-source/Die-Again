@@ -14,7 +14,8 @@ export enum GameState {
   GAMEOVER,
   WIN,
   FIRE_DASH_GROUP,
-  GAME_IDEA
+  GAME_IDEA,
+  EDIT_PROFILE
 }
 
 export type Language = 'it' | 'en';
@@ -28,7 +29,7 @@ export interface GameObject {
   pos: Vector2D;
   size: Vector2D;
   color: string;
-  type: 'player' | 'wall' | 'trap' | 'goal' | 'moving_wall' | 'falling_spike' | 'disappearing_floor' | 'opening_floor' | 'collectible_gem';
+  type: 'player' | 'wall' | 'trap' | 'goal' | 'moving_wall' | 'falling_spike' | 'disappearing_floor' | 'opening_floor' | 'collectible_gem' | 'fake_wall' | 'illusory_trap' | 'invisible_wall' | 'wind_zone' | 'reverse_controls' | 'fake_goal' | 'teleport_trap';
   isLethal?: boolean;
   state?: any;
 }
@@ -50,6 +51,27 @@ export interface Skin {
   isVipOnly?: boolean;
   isCodeOnly?: boolean;
   isAdmin?: boolean;
+  ability?: 'fly' | 'shoot' | 'speed' | 'low_gravity' | 'ghost' | 'double_jump' | 'shield';
+  isRainbow?: boolean;
+}
+
+export type ItemType = 'hat' | 'eyewear' | 'shirt' | 'pants' | 'shoes';
+
+export interface Item {
+  id: string;
+  name: string;
+  type: ItemType;
+  price: number;
+  icon?: string;
+  isVipOnly?: boolean;
+}
+
+export interface EquipState {
+  hat: string | null;
+  eyewear: string | null;
+  shirt: string | null;
+  pants: string | null;
+  shoes: string | null;
 }
 
 export interface Mission {
@@ -80,6 +102,9 @@ export interface UserStats {
   dailyStreak: number;
   unlockedSkins: string[];
   activeSkinId: string;
+  unlockedItems: string[];
+  equippedItems: EquipState;
+  itemDurability: { [itemId: string]: number };
   language: Language;
   membership: 'none' | 'premium' | 'vip';
   nameColor: string;

@@ -5,18 +5,19 @@ import { t } from '../i18n';
 
 interface LuckySpinProps {
   onWin: (gems: number) => void;
+  onWinItemChoice: () => void;
   onClose: () => void;
   userGems: number;
   lang: Language;
 }
 
-const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onClose, userGems, lang }) => {
+const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onWinItemChoice, onClose, userGems, lang }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const rewards = [50, 1000, 0, 500, 100, 2500, 0, 200];
-  const colors = ['#f44336', '#ffeb3b', '#9c27b0', '#4caf50', '#3f51b5', '#ff9800', '#03a9f4', '#00bcd4'];
+  const rewards = [50, 1000, 0, 500, 100, 2500, 0, 200, "ITEM"];
+  const colors = ['#f44336', '#ffeb3b', '#9c27b0', '#4caf50', '#3f51b5', '#ff9800', '#03a9f4', '#00bcd4', '#ffffff'];
 
   const SPIN_COST = 500;
 
@@ -58,21 +59,21 @@ const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onClose, userGems, lang })
 
       ctx.save();
       ctx.rotate(i * sliceAngle + sliceAngle / 2);
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 18px "Press Start 2P"';
+      ctx.fillStyle = i === 8 ? '#f00' : '#000'; // Rosso per ITEM
+      ctx.font = i === 8 ? '900 12px sans-serif' : 'bold 14px sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(reward.toString(), radius - 30, 8);
+      ctx.fillText(reward === 'ITEM' ? 'ITEM 🎁' : reward.toString(), radius - 20, 5);
       ctx.restore();
     });
 
     ctx.restore();
 
-    // Needle (Lancetta dritta in alto)
+    // Needle (Lancetta dritta con punta verso il basso)
     ctx.fillStyle = '#ff0000';
     ctx.beginPath();
-    ctx.moveTo(centerX, centerY - radius - 25);
-    ctx.lineTo(centerX - 15, centerY - radius + 5);
-    ctx.lineTo(centerX + 15, centerY - radius + 5);
+    ctx.moveTo(centerX - 15, centerY - radius - 25);
+    ctx.lineTo(centerX + 15, centerY - radius - 25);
+    ctx.lineTo(centerX, centerY - radius + 5);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
@@ -95,11 +96,27 @@ const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onClose, userGems, lang })
     }
 
     setIsSpinning(true);
-    const extraSpins = 5 + Math.random() * 8;
-    const targetRotation = rotation + extraSpins * 360;
+    
+    // Probabilità: 0.01% per ITEM, il resto diviso tra gli altri 8
+    const isSuperWin = Math.random() < 0.0001;
+    let targetSliceIndex: number;
+    if (isSuperWin) {
+      targetSliceIndex = 8; // L'ultimo indice è "ITEM"
+    } else {
+      targetSliceIndex = Math.floor(Math.random() * 8); // Uno degli altri premi
+    }
+
+    const sliceAngle = 360 / rewards.length;
+    const extraSpins = 5 + Math.random() * 5;
+    
+    // Calcoliamo la rotazione finale per fermarsi sulla fetta corretta
+    // Il puntatore è a 270 degrees (alto). La fetta 0 inizia a 0 (destra).
+    // finalRot = offset - (targetSliceIndex * sliceAngle) - (mezza fetta per centrare)
+    const baseTarget = (270 - (targetSliceIndex * sliceAngle) - (sliceAngle / 2));
+    const targetRotation = rotation + (extraSpins * 360) + (baseTarget - (rotation % 360) + 360) % 360;
     
     const startTime = performance.now();
-    const duration = 4000;
+    const duration = 5000;
 
     const animate = (time: number) => {
       const elapsed = time - startTime;
@@ -113,16 +130,12 @@ const LuckySpin: React.FC<LuckySpinProps> = ({ onWin, onClose, userGems, lang })
         requestAnimationFrame(animate);
       } else {
         setIsSpinning(false);
-        // Calcolo premio basato sulla posizione in alto (270 gradi)
-        const finalDeg = (currentRot % 360 + 360) % 360;
-        // La ruota gira in senso orario. L'indice 0 è a 0 gradi (destra).
-        // Per avere il premio in alto (270 gradi o -90 gradi), dobbiamo compensare.
-        const sliceAngle = 360 / rewards.length;
-        const offset = 270; 
-        const adjustedDeg = (offset - finalDeg + 360) % 360;
-        const sliceIndex = Math.floor(adjustedDeg / sliceAngle);
-        
-        onWin(rewards[sliceIndex] - SPIN_COST);
+        if (targetSliceIndex === 8) {
+           onWin(-SPIN_COST); // Toppa il costo
+           onWinItemChoice();
+        } else {
+           onWin((rewards[targetSliceIndex] as number) - SPIN_COST);
+        }
       }
     };
 
