@@ -43,7 +43,7 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
                onClick={() => setActiveTab('items')}
                className={`text-sm sm:text-2xl md:text-3xl font-black uppercase italic transition-all ${activeTab === 'items' ? 'text-cyan-500 scale-105 md:scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}
              >
-               COSMETICI
+               ABBIGLIAMENTO
              </button>
           </div>
           <div className="bg-zinc-950 px-4 py-1.5 border-2 border-yellow-500 rounded-lg flex items-center gap-2">

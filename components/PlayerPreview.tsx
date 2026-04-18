@@ -52,7 +52,7 @@ const PlayerPreview: React.FC<PlayerPreviewProps> = ({ skinId, equippedItems, is
               className={isRainbow && !isDead ? "animate-rainbow-stroke" : ""}
             />
             
-            {/* COSMETIC ITEMS */}
+            {/* CLOTHING ITEMS */}
             <g>
               {/* Shoes */}
               {shoes && (

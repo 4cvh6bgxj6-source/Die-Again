@@ -427,7 +427,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
       // Corpo
       ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 10); ctx.stroke();
       
-      // Items Rendering (COSMETICS)
+      // Items Rendering (CLOTHING)
       const hat = equippedItems.hat;
       const eyewear = equippedItems.eyewear;
       const shirt = equippedItems.shirt;
