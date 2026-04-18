@@ -184,13 +184,11 @@ export const LEVELS: LevelData[] = [
     { pos: { x: 500, y: 630 }, size: { x: 40, y: 20 }, color: '#ff0000', type: 'trap' },
     { pos: { x: 950, y: 600 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ]),
-  createLevel(3, "Il Labirinto Invisibile", "Extreme", [
+  createLevel(3, "Il Labirinto Visibile", "Normal", [
     { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    { pos: { x: 250, y: 550 }, size: { x: 100, y: 30 }, color: NEON_PURPLE, type: 'invisible_wall' },
-    { pos: { x: 450, y: 450 }, size: { x: 100, y: 30 }, color: NEON_PURPLE, type: 'invisible_wall' },
-    { pos: { x: 650, y: 350 }, size: { x: 100, y: 30 }, color: NEON_PURPLE, type: 'invisible_wall' },
-    { pos: { x: 250, y: 600 }, size: { x: 500, y: 20 }, color: '#ff0000', type: 'trap' },
-    { pos: { x: 850, y: 300 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
+    { pos: { x: 250, y: 500 }, size: { x: 500, y: 30 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 800, y: 650 }, size: { x: 200, y: 50 }, color: NEON_PURPLE, type: 'wall' },
+    { pos: { x: 900, y: 600 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
   ]),
   createLevel(4, "Venti di Sventura", "Impossible", [
     { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
@@ -205,7 +203,6 @@ export const LEVELS: LevelData[] = [
   ]),
   createLevel(5, "Inversione Fatale", "Impossible", [
     { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: NEON_PURPLE, type: 'wall' },
-    { pos: { x: 250, y: 100 }, size: { x: 400, y: 550 }, color: 'rgba(255, 0, 255, 0.1)', type: 'reverse_controls' },
     { pos: { x: 300, y: 500 }, size: { x: 100, y: 20 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 500, y: 400 }, size: { x: 100, y: 20 }, color: NEON_PURPLE, type: 'wall' },
     { pos: { x: 750, y: 650 }, size: { x: 250, y: 50 }, color: NEON_PURPLE, type: 'wall' },

@@ -280,7 +280,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
                diedThisFrame = true;
             }
           }
-        } else if (obj.type === 'wall' || obj.type === 'moving_wall' || obj.type === 'disappearing_floor' || obj.type === 'opening_floor' || obj.type === 'invisible_wall') {
+        } else if (obj.type === 'wall' || obj.type === 'moving_wall' || obj.type === 'disappearing_floor' || obj.type === 'opening_floor') {
           const currentObjY = obj.currentPos.y + (obj.type === 'opening_floor' ? obj.tremble : 0);
           if (prev.pos.y + PLAYER_SIZE <= currentObjY + 15) {
             nextPos.y = currentObjY - PLAYER_SIZE; nextVel.y = 0; nextGrounded = true;
@@ -387,8 +387,6 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
                 ctx.beginPath(); ctx.moveTo(obj.currentPos.x, renderY + yOff); ctx.lineTo(obj.currentPos.x + obj.size.x, renderY + yOff); ctx.stroke();
               }
            }
-        } else if (obj.type === 'invisible_wall') {
-           if (isAdmin) { ctx.globalAlpha = 0.3; ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y); ctx.globalAlpha = 1.0; }
         } else { 
            ctx.fillRect(obj.currentPos.x, renderY, obj.size.x, obj.size.y); 
            if (obj.type === 'wall' || obj.type === 'fake_wall' || obj.type === 'moving_wall') {
