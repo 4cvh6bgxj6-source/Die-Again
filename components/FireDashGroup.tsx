@@ -17,16 +17,6 @@ const FireDashGroup: React.FC<FireDashGroupProps> = ({ onClose, onGoToIdea, lang
           {t('fireDashGroup', lang)}
         </h2>
         
-        <div className="space-y-6">
-          <h3 className="text-xl md:text-2xl text-white font-bold uppercase underline decoration-orange-600 underline-offset-8">
-            {t('whoAreWe', lang)}
-          </h3>
-          
-          <p className="text-zinc-300 text-sm md:text-lg leading-relaxed font-bold uppercase tracking-wide italic">
-            "{t('fireDashDesc', lang)}"
-          </p>
-        </div>
-
         <div className="mt-4 flex flex-col gap-6">
           <button
             onClick={onGoToIdea}
