@@ -41,7 +41,7 @@ const SkinShop: React.FC<SkinShopProps> = ({
         </div>
 
         <div className="max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
             {SKINS.map((skin) => {
               const isUnlocked = unlockedSkins.includes(skin.id);
               const isActive = activeSkinId === skin.id;

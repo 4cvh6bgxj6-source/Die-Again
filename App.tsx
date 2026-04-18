@@ -395,15 +395,25 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.GAMEOVER && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[500] p-4">
-          <div className="text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 w-full max-w-md bg-zinc-950 p-6 md:p-10 border-8 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]">
-            <h2 className="text-2xl md:text-5xl font-black text-red-600 animate-pulse mb-8 uppercase leading-tight">
-              RIPROVA,<br/>ANCORA
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-[900] p-4 backdrop-blur-sm">
+          <div className="text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300 w-full max-w-sm bg-zinc-950 p-6 border-8 border-red-700 shadow-[0_0_50px_rgba(220,38,38,0.5)] rounded-2xl">
+            <h2 className="text-2xl md:text-5xl font-black text-red-600 animate-pulse mb-6 uppercase leading-none tracking-tighter drop-shadow-lg">
+              RIPROVA<br/>ANCORA
             </h2>
-            <div className="mb-8 scale-110"><PlayerPreview skinId={stats.activeSkinId} equippedItems={stats.equippedItems} isDead={true} /></div>
-            <div className="flex flex-col gap-4 w-full">
-              <button onClick={startGame} className="bg-red-600 text-white py-5 text-xl font-black border-b-8 border-red-900 uppercase">RIPROVA</button>
-              <button onClick={() => setGameState(GameState.MENU)} className="bg-zinc-800 text-white py-4 text-sm font-black border-b-4 border-zinc-950 uppercase">{t('menu', stats.language)}</button>
+            <div className="mb-6 scale-[0.8] md:scale-[1.0]"><PlayerPreview skinId={stats.activeSkinId} equippedItems={stats.equippedItems} isDead={true} /></div>
+            <div className="flex flex-col gap-3 w-full max-w-[240px]">
+              <button 
+                onClick={startGame} 
+                className="bg-red-600 text-white py-4 text-lg md:text-xl font-black border-b-[6px] border-red-900 active:border-b-0 active:translate-y-1 uppercase transition-all hover:bg-red-500 shadow-lg"
+              >
+                RIPROVA
+              </button>
+              <button 
+                onClick={() => setGameState(GameState.MENU)} 
+                className="bg-zinc-800 text-zinc-400 py-2.5 text-[10px] md:text-xs font-black border-b-4 border-zinc-900 uppercase hover:bg-zinc-700 transition-all font-mono"
+              >
+                {t('menu', stats.language)}
+              </button>
             </div>
           </div>
         </div>

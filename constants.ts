@@ -296,8 +296,8 @@ export function generateProceduralLevel(levelId: number): LevelData {
       }
     }
 
-    currentX += width + (15 + Math.random() * (20 + levelId)); 
-    if (currentX > 850) break;
+    currentX += width + (20 + Math.random() * Math.min(150, 10 + levelId * 0.4)); 
+    if (currentX > 950) break;
   }
 
   return {

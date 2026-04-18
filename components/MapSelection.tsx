@@ -49,9 +49,9 @@ export const MapSelection: React.FC<MapSelectionProps> = ({ currentLevelId, onSe
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 flex-1">
-        <div className="w-full md:w-1/3 flex flex-col gap-4 overflow-y-auto max-h-[80vh] pb-10">
-          <h3 className="text-xl font-bold text-zinc-400 uppercase">{language === 'it' ? 'Seleziona Mondo' : 'Select World'}</h3>
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 flex-1 min-h-0">
+        <div className="w-full md:w-1/3 flex flex-col gap-3 overflow-y-auto max-h-[30vh] md:max-h-[80vh] pb-4 md:pb-10 bg-zinc-950/50 p-3 rounded-xl border border-zinc-800">
+          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">{language === 'it' ? 'Mondi' : 'Worlds'}</h3>
           {WORLDS.map(w => {
              const isUnlocked = w.id <= highestWorldId;
              return (
@@ -72,12 +72,12 @@ export const MapSelection: React.FC<MapSelectionProps> = ({ currentLevelId, onSe
           })}
         </div>
 
-        <div className="w-full md:w-2/3 max-w-3xl bg-zinc-900 rounded-2xl p-4 sm:p-6 border-2 border-zinc-800 md:overflow-y-auto max-h-[80vh]">
-          <h3 className="text-2xl font-black mb-6 flex items-center justify-between">
+        <div className="w-full md:w-2/3 max-w-3xl bg-zinc-900 rounded-2xl p-4 sm:p-6 border-2 border-zinc-800 overflow-y-auto flex-1 md:flex-none md:max-h-[80vh]">
+          <h3 className="text-xl md:text-2xl font-black mb-4 md:mb-6 flex items-center justify-between">
             <span>{WORLDS.find(w => w.id === selectedWorldId)?.name}</span>
-            <span className="text-sm font-bold bg-zinc-800 px-3 py-1 rounded text-zinc-400">{language === 'it' ? 'Livelli' : 'Levels'} 1-50</span>
+            <span className="text-[10px] md:text-sm font-bold bg-zinc-800 px-2 md:px-3 py-0.5 md:py-1 rounded text-zinc-400">{language === 'it' ? 'Livelli' : 'Levels'} 1-50</span>
           </h3>
-          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-3">
             {renderLevels()}
           </div>
         </div>

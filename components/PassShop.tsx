@@ -128,11 +128,11 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
             </div>
           </div>
         ) : (
-           <div className="flex flex-col md:flex-row gap-8 mb-10 min-h-[400px]">
+              <div className="flex flex-col xl:flex-row gap-6 mb-10 min-h-[400px]">
               {/* Profile Preview Table */}
-               <div className="w-full md:w-80 flex flex-col items-center gap-6 bg-black/40 p-8 border-4 border-zinc-700 rounded-xl">
-                 <h4 className="text-zinc-500 font-black uppercase text-xs tracking-widest border-b-2 border-zinc-700 pb-2 w-full text-center">ANTEPRIMA LIVE</h4>
-                 <div className="scale-150 py-10">
+               <div className="w-full xl:w-80 flex flex-col items-center gap-6 bg-black/40 p-4 md:p-8 border-4 border-zinc-700 rounded-xl">
+                 <h4 className="text-zinc-500 font-black uppercase text-[10px] tracking-widest border-b-2 border-zinc-700 pb-2 w-full text-center">ANTEPRIMA LIVE</h4>
+                 <div className="scale-100 md:scale-150 py-4 md:py-10">
                     <PlayerPreview skinId={userStats.activeSkinId} equippedItems={userStats.equippedItems} isStatic={true} />
                  </div>
                  <div className="w-full grid grid-cols-1 gap-2">
@@ -148,8 +148,8 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
               </div>
 
               {/* Items Grid */}
-              <div className="flex-1 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex-1 max-h-[60vh] md:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {freeChoice && (
                       <div className="col-span-full bg-cyan-900/30 border-2 border-cyan-500 p-4 rounded-lg flex items-center justify-between mb-2 animate-in slide-in-from-top duration-500">
                         <div className="flex items-center gap-4">
