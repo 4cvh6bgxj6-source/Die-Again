@@ -229,20 +229,20 @@ export function generateProceduralLevel(levelId: number): LevelData {
   const world = getWorldForLevel(levelId);
 
   const objects: GameObject[] = [
-    { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: world.wallColor, type: 'wall' },
-    { pos: { x: 900, y: 650 }, size: { x: 100, y: 50 }, color: world.wallColor, type: 'wall' },
-    { pos: { x: 950, y: 600 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' },
+    { pos: { x: 0, y: 650 }, size: { x: 150, y: 50 }, color: world.wallColor, type: 'wall' }
   ];
 
-  const trapMultiplier = Math.floor(levelId / 4); // Increment difficulty
+  const trapMultiplier = Math.floor(levelId / 4); 
   const numPieces = 6 + trapMultiplier;
   let currentX = 150;
   let currentY = 650;
-  let lastType: string = 'wall';
   
   for (let i = 0; i < numPieces; i++) {
+    // Stop if we are getting close to the goal area
+    if (currentX > 850) break;
+
     const typeRoll = Math.random();
-    const width = Math.max(50, 100 - (levelId * 1)) + Math.random() * 60; // Wider platforms
+    const width = Math.max(50, 100 - (levelId * 0.5)) + Math.random() * 60; 
     
     if (Math.random() > 0.8) {
       const yChange = (Math.random() > 0.5 ? -1 : 1) * 60;
@@ -273,8 +273,6 @@ export function generateProceduralLevel(levelId: number): LevelData {
       isLethal: isLethal
     });
 
-    lastType = isLethal ? 'hidden_trap' : pieceType;
-
     const airTrapRoll = Math.random();
     if (airTrapRoll > 0.5) { 
        if (airTrapRoll > 0.8) {
@@ -297,9 +295,12 @@ export function generateProceduralLevel(levelId: number): LevelData {
       }
     }
 
-    currentX += width + (20 + Math.random() * Math.min(150, 10 + levelId * 0.4)); 
-    if (currentX > 950) break;
+    currentX += width + (20 + Math.random() * Math.min(130, 10 + levelId * 0.3)); 
   }
+
+  // Ensure end platform and goal are always there and reachable
+  objects.push({ pos: { x: 900, y: 650 }, size: { x: 200, y: 50 }, color: world.wallColor, type: 'wall' });
+  objects.push({ pos: { x: 1050, y: 600 }, size: { x: 40, y: 40 }, color: '#00ff00', type: 'goal' });
 
   return {
     id: levelId,

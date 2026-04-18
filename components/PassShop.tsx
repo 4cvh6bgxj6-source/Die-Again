@@ -31,17 +31,17 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
           X
         </button>
 
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b-4 border-zinc-800 pb-6">
-          <div className="flex gap-4 sm:gap-16">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b-4 border-zinc-800 pb-6">
+          <div className="flex gap-2 sm:gap-16 w-full md:w-auto justify-center">
              <button 
                onClick={() => setActiveTab('membership')}
-               className={`text-sm sm:text-2xl md:text-3xl font-black uppercase italic transition-all ${activeTab === 'membership' ? 'text-yellow-500 scale-105 md:scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}
+               className={`text-[10px] sm:text-2xl md:text-3xl font-black uppercase italic transition-all ${activeTab === 'membership' ? 'text-yellow-500 scale-105 md:scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}
              >
                ABBONAMENTI
              </button>
              <button 
                onClick={() => setActiveTab('items')}
-               className={`text-sm sm:text-2xl md:text-3xl font-black uppercase italic transition-all ${activeTab === 'items' ? 'text-cyan-500 scale-105 md:scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}
+               className={`text-[10px] sm:text-2xl md:text-3xl font-black uppercase italic transition-all ${activeTab === 'items' ? 'text-cyan-500 scale-105 md:scale-110' : 'text-zinc-600 hover:text-zinc-400'}`}
              >
                ABBIGLIAMENTO
              </button>
