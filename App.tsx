@@ -18,6 +18,8 @@ import Missions from './components/Missions';
 import DiePass from './components/DiePass';
 import { MapSelection } from './components/MapSelection';
 import { getLevelAdvice, getRageMessage } from './services/gemini';
+import { audioService } from './services/audio';
+import { Volume2, VolumeX } from 'lucide-react';
 import { t } from './i18n';
 
 const SAVE_KEY = 'die_again_permanent_save_v3';
@@ -54,6 +56,7 @@ const App: React.FC = () => {
     usedCodes: [],
     adminAbuseActive: false
   });
+  const [isMuted, setIsMuted] = useState(false);
   const [currentLevel, setCurrentLevel] = useState<LevelData>(LEVELS[0]);
   const [lastDeathMessage, setLastDeathMessage] = useState<string>("");
   const [levelAdvice, setLevelAdvice] = useState<string>("");
@@ -81,6 +84,14 @@ const App: React.FC = () => {
        } catch (e) { console.error(e); }
     }
   }, []);
+
+  useEffect(() => {
+    if (gameState === GameState.PLAYING) {
+      audioService.playGameMusic();
+    } else {
+      audioService.playLobbyMusic();
+    }
+  }, [gameState]);
 
   useEffect(() => {
     if (stats.username) {
@@ -117,6 +128,7 @@ const App: React.FC = () => {
 
   const handleDeath = () => {
     setGameState(GameState.GAMEOVER);
+    audioService.playDeath();
     setActiveGemRain(0); 
     setStats(prev => {
       const newMissions = prev.missions.map(m => m.id === 'm1' ? { ...m, current: m.current + 1 } : m);
@@ -127,6 +139,7 @@ const App: React.FC = () => {
 
   const handleWin = () => {
     setGameState(GameState.WIN);
+    audioService.playWin();
     setActiveGemRain(0);
     setStats(prev => {
       let nextId = prev.currentLevelId;
@@ -264,6 +277,14 @@ const App: React.FC = () => {
 
       {gameState !== GameState.REGISTRATION && (
         <div className="fixed top-4 right-4 z-[400] flex flex-col items-end gap-2 pointer-events-none">
+          {/* Mute Button */}
+          <button 
+            onClick={() => setIsMuted(prev => audioService.toggleMute())}
+            className="bg-zinc-900/80 backdrop-blur-md border-2 border-white/20 p-2 md:p-3 rounded-lg shadow-lg pointer-events-auto hover:bg-zinc-800 transition-all text-white/70 hover:text-white"
+          >
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+          
           {/* Gem HUD */}
           <div className="bg-zinc-900/80 backdrop-blur-md border-2 border-yellow-500 px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] pointer-events-auto">
             <div className="flex items-center gap-2 md:gap-3">

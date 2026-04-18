@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { GameState, LevelData, GameObject, Vector2D, Language, UserStats } from '../types';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, PLAYER_SIZE, GRAVITY, JUMP_FORCE, MOVE_SPEED, SKINS, generateProceduralLevel, getWorldForLevel } from '../constants';
 import { t } from '../i18n';
+import { audioService } from '../services/audio';
 
 interface GameEngineProps {
   level: LevelData;
@@ -205,6 +206,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ level: initialLevel, onDeath, o
     } else {
       if ((keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['Space'] || keys.current['VirtualJump']) && prev.isGrounded) {
         nextVel.y = JUMP_FORCE;
+        audioService.playJump();
       }
       nextVel.y += GRAVITY;
     }

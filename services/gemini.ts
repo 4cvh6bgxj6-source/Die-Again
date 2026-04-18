@@ -75,7 +75,7 @@ const getRandomFallback = (type: 'rage' | 'advice' | 'feedback', lang: Language,
  * Helper to call Gemini with retries and exponential backoff.
  * This helps handle transient errors and 429 Rate Limit issues.
  */
-async function generateWithRetry(prompt: string, retries = 1, delay = 500): Promise<string | null> {
+async function generateWithRetry(prompt: string, retries = 2, delay = 800): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn("GEMINI_API_KEY not found. Using local fallbacks.");
@@ -98,18 +98,20 @@ async function generateWithRetry(prompt: string, retries = 1, delay = 500): Prom
       if (text) return text;
     } catch (error: any) {
       const errorMsg = error?.message || String(error);
-      const isQuotaError = errorMsg.toLowerCase().includes("429") || 
-                           errorMsg.toLowerCase().includes("quota") || 
-                           errorMsg.toLowerCase().includes("resource_exhausted");
+      const lowMsg = errorMsg.toLowerCase();
       
-      if (isQuotaError) {
+      const isQuotaError = lowMsg.includes("429") || lowMsg.includes("quota") || lowMsg.includes("resource_exhausted");
+      const isTransientError = lowMsg.includes("500") || lowMsg.includes("rpc failed") || lowMsg.includes("xhr error") || lowMsg.includes("proxy");
+      
+      if (isQuotaError || isTransientError) {
         if (i < retries) {
-          console.warn(`Gemini Quota Exceeded (429). Retrying in ${delay}ms...`);
+          const type = isQuotaError ? "Quota Exceeded (429)" : "Transient Server Error";
+          console.warn(`Gemini ${type}. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           delay *= 2; 
           continue;
         } else {
-          console.warn("Gemini Quota Exceeded. Switching to local fallback.");
+          console.warn(`Gemini error persistent after ${retries} retries. Switching to local fallback.`);
           return null;
         }
       }
