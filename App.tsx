@@ -479,7 +479,7 @@ const App: React.FC = () => {
           onEquipItem={handleEquipItem}
           onBuyDiePassPlus={handleBuyDiePassPlus} 
           onBuyPremium={() => { if(stats.gems >= 5000) setStats(p => ({...p, gems: p.gems - 5000, membership: 'premium'})) }} 
-          onBuyVip={() => { if(stats.gems >= 20000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 20000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} 
+          onBuyVip={() => { if(stats.gems >= 100000) { const vipUnlockable = SKINS.filter(s => !s.isCodeOnly).map(s => s.id); setStats(p => ({...p, gems: p.gems - 100000, membership: 'vip', nameColor: 'rainbow', unlockedSkins: [...new Set([...p.unlockedSkins, ...vipUnlockable])]})); } }} 
           onChangeNameColor={(c) => setStats(p => ({...p, nameColor: c}))} 
           onClose={() => setGameState(GameState.MENU)} 
           freeChoice={freeItemChoiceActive}

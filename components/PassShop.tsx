@@ -115,7 +115,7 @@ const PassShop: React.FC<PassShopProps> = ({ userStats, onBuyPremium, onBuyVip, 
               {userStats.membership !== 'vip' ? (
                 <button 
                   onClick={onBuyVip}
-                  disabled={userStats.gems < 20000}
+                  disabled={userStats.gems < 100000}
                   className="mt-auto bg-gradient-to-r from-red-600 via-green-600 to-blue-600 hover:brightness-110 disabled:grayscale text-white py-4 font-bold uppercase text-xs border-b-4 border-white/50 active:scale-95 transition-all"
                 >
                   {t('buyVip', lang)}
